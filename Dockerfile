@@ -63,26 +63,29 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONPATH=/app
 
-# 安裝 Python 和 Uvicorn（如果 Alpine 沒有）
+# 安裝 Python 和 Uvicorn + Gunicorn
 RUN apk add --no-cache python3 py3-pip openssl
 
-# 安裝後端依賴（重複安裝因為 Alpine 是不同的基礎映像）
+# 安裝後端依賴
 RUN pip install --no-cache-dir --break-system-packages -r /app/requirements.txt
+
+# 安裝 gunicorn 作為生產服務器
+RUN pip install --no-cache-dir --break-system-packages gunicorn
 
 # 暴露連接埠
 EXPOSE 80
 
-# 建立啟動腳本 - 使用更健壯的啟動方式
+# 建立啟動腳本 - 使用 gunicorn 替代 uvicorn
 RUN echo '#!/bin/sh' > /start.sh && \
     echo 'echo "========================================="' >> /start.sh && \
-    echo 'echo "Starting uvicorn..."' >> /start.sh && \
-    echo 'cd /app && nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > /tmp/uvicorn.log 2>&1 &' >> /start.sh && \
-    echo 'UVICORN_PID=$!' >> /start.sh && \
-    echo 'echo "Uvicorn started with PID: $UVICORN_PID"' >> /start.sh && \
-    echo 'echo "Waiting 25 seconds for uvicorn to initialize..."' >> /start.sh && \
-    echo 'sleep 25' >> /start.sh && \
-    echo 'echo "Checking if uvicorn is running..."' >> /start.sh && \
-    echo 'if ps -p $UVICORN_PID > /dev/null; then echo "Uvicorn is running"; else echo "Uvicorn failed to start"; cat /tmp/uvicorn.log; fi' >> /start.sh && \
+    echo 'echo "Starting Gunicorn..."' >> /start.sh && \
+    echo 'cd /app && nohup gunicorn -w 2 -b 0.0.0.0:8000 app.main:app > /tmp/gunicorn.log 2>&1 &' >> /start.sh && \
+    echo 'GUNICORN_PID=$!' >> /start.sh && \
+    echo 'echo "Gunicorn started with PID: $GUNICORN_PID"' >> /start.sh && \
+    echo 'echo "Waiting 30 seconds for server to initialize..."' >> /start.sh && \
+    echo 'sleep 30' >> /start.sh && \
+    echo 'echo "Checking if gunicorn is running..."' >> /start.sh && \
+    echo 'if ps -p $GUNICORN_PID > /dev/null; then echo "Gunicorn is running"; else echo "Gunicorn failed to start"; cat /tmp/gunicorn.log; fi' >> /start.sh && \
     echo 'echo "Starting nginx..."' >> /start.sh && \
     echo 'nginx -g "daemon off;"' >> /start.sh && \
     chmod +x /start.sh
