@@ -72,13 +72,17 @@ RUN pip install --no-cache-dir --break-system-packages -r /app/requirements.txt
 # 暴露連接埠
 EXPOSE 80
 
-# 建立啟動腳本 - 使用 uvicorn 直接啟動（更簡單可靠）
+# 建立啟動腳本 - 增加等待時間並添加調試
 RUN echo '#!/bin/sh' > /start.sh && \
     echo 'echo "========================================="' >> /start.sh && \
-    echo 'echo "Starting uvicorn..."' >> /start.sh && \
+    echo 'echo "Starting uvicorn in background..."' >> /start.sh && \
     echo 'cd /app && uvicorn app.main:app --host 0.0.0.0 --port 8000 > /tmp/uvicorn.log 2>&1 &' >> /start.sh && \
-    echo 'sleep 3' >> /start.sh && \
-    echo 'echo "Waiting 3 seconds..."' >> /start.sh && \
+    echo 'UVICORN_PID=$!' >> /start.sh && \
+    echo 'echo "Uvicorn PID: $UVICORN_PID"' >> /start.sh && \
+    echo 'echo "Waiting 15 seconds for services to initialize..."' >> /start.sh && \
+    echo 'sleep 15' >> /start.sh && \
+    echo 'echo "Testing nginx configuration..."' >> /start.sh && \
+    echo 'nginx -t' >> /start.sh && \
     echo 'echo "Starting nginx..."' >> /start.sh && \
     echo 'nginx -g "daemon off;"' >> /start.sh && \
     chmod +x /start.sh
