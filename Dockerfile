@@ -74,10 +74,10 @@ EXPOSE 80
 
 # 建立啟動腳本
 RUN echo '#!/bin/sh' > /start.sh && \
-    echo 'echo "Starting uvicorn..."' >> /start.sh && \
-    echo 'python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &' >> /start.sh && \
-    echo 'echo "Waiting for uvicorn to start..."' >> /start.sh && \
-    echo 'sleep 5' >> /start.sh && \
+    echo 'echo "Starting uvicorn in background..."' >> /start.sh && \
+    echo 'cd /app && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > /var/log/uvicorn.log 2>&1 &' >> /start.sh && \
+    echo 'echo "Waiting for uvicorn to start (15 seconds)..."' >> /start.sh && \
+    echo 'sleep 15' >> /start.sh && \
     echo 'echo "Starting nginx..."' >> /start.sh && \
     echo 'nginx -g "daemon off;"' >> /start.sh && \
     chmod +x /start.sh
