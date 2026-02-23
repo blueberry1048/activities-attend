@@ -72,15 +72,19 @@ RUN pip install --no-cache-dir --break-system-packages -r /app/requirements.txt
 # 暴露連接埠
 EXPOSE 80
 
-# 建立啟動腳本
+# 建立啟動腳本 - 使用更健壯的啟動方式
 RUN echo '#!/bin/sh' > /start.sh && \
-    echo 'echo "Starting uvicorn in background..."' >> /start.sh && \
-    echo 'cd /app && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > /var/log/uvicorn.log 2>&1 &' >> /start.sh && \
-    echo 'echo "Waiting for uvicorn to start (15 seconds)..."' >> /start.sh && \
-    echo 'sleep 15' >> /start.sh && \
+    echo 'echo "========================================="' >> /start.sh && \
+    echo 'echo "Starting uvicorn..."' >> /start.sh && \
+    echo 'cd /app && nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > /tmp/uvicorn.log 2>&1 &' >> /start.sh && \
+    echo 'UVICORN_PID=$!' >> /start.sh && \
+    echo 'echo "Uvicorn started with PID: $UVICORN_PID"' >> /start.sh && \
+    echo 'echo "Waiting 25 seconds for uvicorn to initialize..."' >> /start.sh && \
+    echo 'sleep 25' >> /start.sh && \
+    echo 'echo "Checking if uvicorn is running..."' >> /start.sh && \
+    echo 'if ps -p $UVICORN_PID > /dev/null; then echo "Uvicorn is running"; else echo "Uvicorn failed to start"; cat /tmp/uvicorn.log; fi' >> /start.sh && \
     echo 'echo "Starting nginx..."' >> /start.sh && \
     echo 'nginx -g "daemon off;"' >> /start.sh && \
     chmod +x /start.sh
 
-# 啟動腳本
 CMD ["/start.sh"]
