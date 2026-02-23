@@ -71,5 +71,25 @@ RUN pip install --no-cache-dir --break-system-packages -r /app/requirements.txt
 # 暴露連接埠
 EXPOSE 80
 
-# 啟動腳本：先啟動後端 API，再啟動 Nginx
-CMD sh -c "uvicorn app.main:app --host 127.0.0.1 --port 8000 & nginx -g 'daemon off;'"
+# 啟動腳本：使用 supervisor 管理進程
+RUN pip install --no-cache-dir --break-system-packages supervisor
+
+# 建立 supervisor 配置
+RUN echo "[supervisord]" > /etc/supervisord.conf && \
+    echo "nodaemon=true" >> /etc/supervisord.conf && \
+    echo "" >> /etc/supervisord.conf && \
+    echo "[program:uvicorn]" >> /etc/supervisord.conf && \
+    echo "command=uvicorn app.main:app --host 127.0.0.1 --port 8000" >> /etc/supervisord.conf && \
+    echo "directory=/app" >> /etc/supervisord.conf && \
+    echo "autostart=true" >> /etc/supervisord.conf && \
+    echo "autorestart=true" >> /etc/supervisord.conf && \
+    echo "stdout_logfile=/var/log/uvicorn.log" >> /etc/supervisord.conf && \
+    echo "stderr_logfile=/var/log/uvicorn.error.log" >> /etc/supervisord.conf && \
+    echo "" >> /etc/supervisord.conf && \
+    echo "[program:nginx]" >> /etc/supervisord.conf && \
+    echo "command=nginx -g 'daemon off;'" >> /etc/supervisord.conf && \
+    echo "autostart=true" >> /etc/supervisord.conf && \
+    echo "autorestart=true" >> /etc/supervisord.conf
+
+# 啟動 supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
