@@ -61,9 +61,10 @@ COPY --from=backend-builder /usr/local/lib/python3.11/site-packages /usr/local/l
 # 設定環境變數
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONPATH=/app
 
 # 安裝 Python 和 Uvicorn（如果 Alpine 沒有）
-RUN apk add --no-cache python3 py3-pip
+RUN apk add --no-cache python3 py3-pip openssl
 
 # 安裝後端依賴（重複安裝因為 Alpine 是不同的基礎映像）
 RUN pip install --no-cache-dir --break-system-packages -r /app/requirements.txt
@@ -71,25 +72,15 @@ RUN pip install --no-cache-dir --break-system-packages -r /app/requirements.txt
 # 暴露連接埠
 EXPOSE 80
 
-# 啟動腳本：使用 supervisor 管理進程
-RUN pip install --no-cache-dir --break-system-packages supervisor
+# 建立啟動腳本
+RUN echo '#!/bin/sh' > /start.sh && \
+    echo 'echo "Starting uvicorn..."' >> /start.sh && \
+    echo 'python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &' >> /start.sh && \
+    echo 'echo "Waiting for uvicorn to start..."' >> /start.sh && \
+    echo 'sleep 5' >> /start.sh && \
+    echo 'echo "Starting nginx..."' >> /start.sh && \
+    echo 'nginx -g "daemon off;"' >> /start.sh && \
+    chmod +x /start.sh
 
-# 建立 supervisor 配置
-RUN echo "[supervisord]" > /etc/supervisord.conf && \
-    echo "nodaemon=true" >> /etc/supervisord.conf && \
-    echo "" >> /etc/supervisord.conf && \
-    echo "[program:uvicorn]" >> /etc/supervisord.conf && \
-    echo "command=uvicorn app.main:app --host 127.0.0.1 --port 8000" >> /etc/supervisord.conf && \
-    echo "directory=/app" >> /etc/supervisord.conf && \
-    echo "autostart=true" >> /etc/supervisord.conf && \
-    echo "autorestart=true" >> /etc/supervisord.conf && \
-    echo "stdout_logfile=/var/log/uvicorn.log" >> /etc/supervisord.conf && \
-    echo "stderr_logfile=/var/log/uvicorn.error.log" >> /etc/supervisord.conf && \
-    echo "" >> /etc/supervisord.conf && \
-    echo "[program:nginx]" >> /etc/supervisord.conf && \
-    echo "command=nginx -g 'daemon off;'" >> /etc/supervisord.conf && \
-    echo "autostart=true" >> /etc/supervisord.conf && \
-    echo "autorestart=true" >> /etc/supervisord.conf
-
-# 啟動 supervisor
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+# 啟動腳本
+CMD ["/start.sh"]
