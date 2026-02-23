@@ -1,0 +1,49 @@
+{
+  "$schema": "https://railway.app/schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10,
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 30,
+    "startCommand": "/bin/sh -c \"uvicorn app.main:app --host 127.0.0.1 --port 8000 & nginx -g 'daemon off;'\""
+  },
+  "env": {
+    "DATABASE_URL": {
+      "description": "PostgreSQL 資料庫連線字串",
+      "required": true
+    },
+    "SECRET_KEY": {
+      "description": "JWT 密鑰",
+      "required": true,
+      "generator": "secret"
+    },
+    "ALGORITHM": {
+      "description": "JWT 演算法",
+      "value": "HS256"
+    },
+    "ACCESS_TOKEN_EXPIRE_MINUTES": {
+      "description": "Access Token 過期分鐘數",
+      "value": "10080"
+    },
+    "DEBUG": {
+      "description": "除錯模式",
+      "value": "false"
+    },
+    "QR_CODE_TOKEN_EXPIRE_SECONDS": {
+      "description": "QR Code Token 過期秒數",
+      "value": "60"
+    }
+  },
+  "name": "activities-attend",
+  "regions": [
+    {
+      "id": "tpe",
+      "name": "Taiwan (Taipei)"
+    }
+  ]
+}

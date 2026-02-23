@@ -1,0 +1,9 @@
+{
+  "name": "測試活動",
+  "description": "測試描述",
+  "location": "台北",
+  "event_date": "2026-03-01",
+  "start_time": "10:00",
+  "end_time": "12:00",
+  "is_active": true
+}

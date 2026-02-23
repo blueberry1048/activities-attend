@@ -1,0 +1,59 @@
+# ============================================================
+# Docker Compose - 本地開發環境
+# ============================================================
+# 啟動 PostgreSQL 資料庫
+version: '3.8'
+
+services:
+  # PostgreSQL 資料庫
+  postgres:
+    image: postgres:15-alpine
+    container_name: activities-attend-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: activities_attend
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 後端 API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: activities-attend-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/activities_attend
+      SECRET_KEY: dev-secret-key-change-in-production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 10080
+      DEBUG: "true"
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend:/app
+
+  # 前端
+  frontend:
+    image: node:18-alpine
+    container_name: activities-attend-web
+    working_dir: /app
+    command: npm run dev
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:8000/api
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

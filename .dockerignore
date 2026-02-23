@@ -1,0 +1,63 @@
+# ============================================================
+# Docker 忽略文件
+# ============================================================
+# 這些文件和目錄不會被複製到 Docker 映像中
+
+# Git
+.git
+.gitignore
+
+# Node.js
+node_modules
+npm-debug.log
+*.log
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info
+dist/
+build/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# 測試文件
+test_*.py
+*_test.py
+tests/
+*.test.js
+
+# 資料庫
+*.db
+*.sqlite
+*.sqlite3
+
+# 文檔
+README.md
+SPEC.md
+*.md
+
+# 後端開發文件
+.env
+.env.local
+.env.*.local
+
+# 前端源代碼（不需要，會重新 npm run build）
+# 注意：這裡我們故意不排除 frontend/src 和 frontend/public
+# 這樣 Docker 可以從源代碼構建
+
+# 其他
+.DS_Store
+Thumbs.db
+*.tmp
