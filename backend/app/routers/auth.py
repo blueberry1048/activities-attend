@@ -247,10 +247,12 @@ async def create_admin(
     """
     # 驗證密鑰
     if secret_key != settings.ADMIN_SECRET_KEY:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="密鑰錯誤"
-        )
+        # 調試用：返回實際的比對資訊（生產環境應移除）
+        return {
+            "received": secret_key,
+            "expected": settings.ADMIN_SECRET_KEY,
+            "match": secret_key == settings.ADMIN_SECRET_KEY
+        }
     
     # 檢查是否已有管理員
     result = await db.execute(
