@@ -28,6 +28,5 @@ ENV PYTHONPATH=/app
 # 暴露連接埠
 EXPOSE 8000
 
-# 啟動命令
-# 移除方括號與 sh -c，直接寫指令
+# 啟動命令（使用 sh -c 解析環境變數）
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
