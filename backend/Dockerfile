@@ -25,9 +25,4 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONPATH=/app
 
-# 暴露連接埠
-EXPOSE 8000
-
-COPY start.sh .
-RUN chmod +x start.sh
-CMD ["./start.sh"]
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
