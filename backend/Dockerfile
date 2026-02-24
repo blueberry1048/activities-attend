@@ -25,4 +25,5 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONPATH=/app
 
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# 使用 sh -c 讓 shell 解析環境變數
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
