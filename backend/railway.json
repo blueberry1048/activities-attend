@@ -24,7 +24,7 @@
     },
     "DEBUG": {
       "description": "除錯模式",
-      "value": "false"
+      "value": false
     },
     "QR_CODE_TOKEN_EXPIRE_SECONDS": {
       "description": "QR Code Token 過期秒數",

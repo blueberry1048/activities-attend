@@ -61,19 +61,20 @@ Authorization: Bearer <your_access_token>
 # CORS 中間件設定
 # ----------------------------------------
 # 允許跨域請求
-# 生產環境 (DEBUG=False) 時允許所有來源，方便 Nginx 反向代理
+# 生產環境 (DEBUG=False) 時，由於 Nginx 反向代理，前端和後端是同源，不需要 CORS
+# 只有開發環境 (DEBUG=True) 才需要 CORS
 if settings.DEBUG:
     cors_origins = settings.BACKEND_CORS_ORIGINS
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 else:
-    cors_origins = ["*"]  # 生產環境允許所有來源
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    # 生產環境：不通過 CORS，因為 Nginx 已將前端和後端設為同源
+    pass
 
 
 # ----------------------------------------
