@@ -2,9 +2,6 @@
 # 前端 Dockerfile - React + Vite + Nginx
 # ============================================================
 # 用途：部署到 Railway 的前端服務
-# 
-# 建構指令：
-#   docker build -t frontend ./frontend
 
 # 階段 1: 構建 React 應用
 FROM node:20-alpine AS builder
@@ -27,12 +24,11 @@ RUN npm run build
 # 階段 2: 使用 Nginx 伺服靜態檔案
 FROM nginx:alpine
 
-# 複製自定義 Nginx 配置（覆蓋主配置文件，使用 envsubst 替換 PORT）
-COPY nginx.conf /etc/nginx/nginx.conf.template
+# 1. 覆蓋主設定檔 (解決 worker 過多的問題)
+COPY nginx.conf /etc/nginx/nginx.conf
 
-# 複製構建產物
+# 2. 把模板放入官方指定的特殊目錄 (會自動執行 envsubst)
+COPY default.conf.template /etc/nginx/templates/default.conf.template
+
+# 3. 複製 Vite 構建產物
 COPY --from=builder /app/dist /usr/share/nginx/html
-
-# 使用 envsubst 替換環境變數，然後啟動 Nginx
-# Railway 會傳入 $PORT 環境變數
-CMD ["sh", "-c", "envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"]
