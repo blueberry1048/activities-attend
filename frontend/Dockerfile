@@ -15,11 +15,11 @@ RUN npm run build
 # 階段 2: 使用 Nginx 伺服靜態檔案
 FROM nginx:alpine
 
-# 複製模板檔案並使用 envsubst 處理環境變數
-COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+# 複製 Nginx 配置（固定端口 8080）
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # 複製構建產物
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 啟動 Nginx（模板會自動被處理）
+# 啟動 Nginx
 CMD ["nginx", "-g", "daemon off;"]
