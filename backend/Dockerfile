@@ -29,4 +29,4 @@ ENV PYTHONPATH=/app
 EXPOSE 8000
 
 # 啟動命令（使用 sh -c 解析環境變數）
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+exec uvicorn main:app --host 0.0.0.0 --port 8000
