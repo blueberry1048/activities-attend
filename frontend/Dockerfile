@@ -27,12 +27,14 @@ RUN npm run build
 # 階段 2: 使用 Nginx 伺服靜態檔案
 FROM nginx:alpine
 
-# 複製自定義 Nginx 配置（會透過 envsubst 替換 ${PORT}）
-COPY nginx.conf /etc/nginx/conf.d/default.conf.template
+# 複製自定義 Nginx 配置
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # 複製構建產物
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# 使用 envsubst 替換環境變數，然後啟動 Nginx
-# Railway 會傳入 $PORT 環境變數
-CMD ["sh", "-c", "envsubst '${PORT}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+# 暴露連接埠（Railway 會透過 $PORT 環境變數覆蓋）
+EXPOSE 80
+
+# Nginx 必須在前景運行
+CMD ["nginx", "-g", "daemon off;"]
