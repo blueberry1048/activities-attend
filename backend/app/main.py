@@ -114,16 +114,8 @@ async def root():
 
 
 @app.get("/health")
-async def health_check():
-    """
-    健康檢查端點
-    
-    用於監控服務狀態
-    """
-    return {
-        "status": "healthy",
-        "database": "connected"
-    }
+def health_check():
+    return {"status": "ok"}
 
 
 # ----------------------------------------

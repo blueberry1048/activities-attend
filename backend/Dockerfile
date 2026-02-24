@@ -29,4 +29,5 @@ ENV PYTHONPATH=/app
 EXPOSE 8000
 
 # 啟動命令
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# 移除方括號與 sh -c，直接寫指令
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
