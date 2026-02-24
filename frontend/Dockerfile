@@ -32,3 +32,5 @@ COPY default.conf.template /etc/nginx/templates/default.conf.template
 
 # 3. 複製 Vite 構建產物
 COPY --from=builder /app/dist /usr/share/nginx/html
+
+CMD ["nginx", "-g", "daemon off;"]
