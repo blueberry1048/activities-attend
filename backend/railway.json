@@ -29,11 +29,6 @@
     "QR_CODE_TOKEN_EXPIRE_SECONDS": {
       "description": "QR Code Token 過期秒數",
       "value": "60"
-    },
-    "ADMIN_SECRET_KEY": {
-      "description": "管理員創建密鑰",
-      "required": true,
-      "generator": "secret"
     }
   },
   "name": "activities-attend-backend",

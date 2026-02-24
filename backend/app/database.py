@@ -36,6 +36,9 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False,
 )
 
+# 為了向後相容，別名
+SessionLocal = AsyncSessionLocal
+
 # 建立 ORM 基底類別
 Base = declarative_base()
 

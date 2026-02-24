@@ -63,9 +63,6 @@ class Settings(BaseSettings):
     # QR Code Token 有效期限 (秒)
     QR_CODE_TOKEN_EXPIRE_SECONDS: int = 60
     
-    # 管理員創建密鑰（用於首次創建管理員帳號）
-    ADMIN_SECRET_KEY: str = "change-this-to-a-secure-random-key"
-    
     class Config:
         env_file = ".env"
         case_sensitive = True
