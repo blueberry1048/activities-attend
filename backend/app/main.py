@@ -5,9 +5,41 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from sqlalchemy import select
 from app.config import settings
-from app.database import init_db
+from app.database import init_db, SessionLocal
+from app.models import User
+from app.utils import get_password_hash
 from app.routers import auth, events, admin, participants
+
+
+async def create_default_admin():
+    """
+    創建預設管理員帳號
+    
+    如果資料庫中沒有管理員，則自動創建 admin/admin123
+    """
+    async with SessionLocal() as db:
+        # 檢查是否已有管理員
+        result = await db.execute(
+            select(User).where(User.is_admin == True)
+        )
+        existing_admin = result.scalar_one_or_none()
+        
+        if not existing_admin:
+            # 創建預設管理員
+            admin_user = User(
+                username="admin",
+                email="admin@system.local",
+                hashed_password=get_password_hash("admin123"),
+                full_name="系統管理員",
+                is_admin=True
+            )
+            db.add(admin_user)
+            await db.commit()
+            print("✅ 預設管理員帳號已創建: admin / admin123")
+        else:
+            print("ℹ️ 管理員帳號已存在")
 
 
 @asynccontextmanager
@@ -22,6 +54,9 @@ async def lifespan(app: FastAPI):
     print("正在初始化資料庫...")
     await init_db()
     print("資料庫初始化完成")
+    
+    # 創建預設管理員
+    await create_default_admin()
     
     yield
     

@@ -245,14 +245,14 @@ async def create_admin(
     Returns:
         UserResponse: 新建立的管理員資料
     """
-    # 驗證密鑰
-    if secret_key != settings.ADMIN_SECRET_KEY:
-        # 調試用：返回實際的比對資訊（生產環境應移除）
-        return {
-            "received": secret_key,
-            "expected": settings.ADMIN_SECRET_KEY,
-            "match": secret_key == settings.ADMIN_SECRET_KEY
-        }
+    # 驗證密鑰 - 使用固定的開發密鑰
+    # 在 Railway 部署時，請確保 ADMIN_SECRET_KEY 環境變數已設定
+    expected_key = settings.ADMIN_SECRET_KEY
+    if secret_key != expected_key:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"密鑰錯誤 (expected: {expected_key[:10]}...)"
+        )
     
     # 檢查是否已有管理員
     result = await db.execute(
