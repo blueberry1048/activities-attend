@@ -218,3 +218,69 @@ async def get_me(
         UserResponse: 使用者資料
     """
     return current_user
+
+
+# ----------------------------------------
+# 管理員創建端點（首次部署時使用）
+# ----------------------------------------
+
+@router.post("/create-admin", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def create_admin(
+    username: str,
+    password: str,
+    secret_key: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    創建管理員帳號（需要密鑰）
+    
+    用於首次部署時創建管理員帳號
+    
+    Args:
+        username: 管理員用戶名
+        password: 管理員密碼
+        secret_key: 管理員密鑰（環境變數 ADMIN_SECRET_KEY）
+        db: 資料庫會話
+    
+    Returns:
+        UserResponse: 新建立的管理員資料
+    """
+    # 驗證密鑰
+    if secret_key != settings.ADMIN_SECRET_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="密鑰錯誤"
+        )
+    
+    # 檢查是否已有管理員
+    result = await db.execute(
+        select(User).where(User.is_admin == True)
+    )
+    existing_admin = result.scalar_one_or_none()
+    
+    # 如果已有管理員且密鑰不正確，則不允許創建
+    # 這裡允許更新現有密碼
+    
+    # 建立管理員
+    hashed_password = get_password_hash(password)
+    new_admin = User(
+        username=username,
+        email=f"{username}@admin.local",
+        hashed_password=hashed_password,
+        full_name="管理員",
+        is_admin=True
+    )
+    
+    if existing_admin:
+        # 更新現有管理員
+        existing_admin.username = username
+        existing_admin.hashed_password = hashed_password
+        await db.flush()
+        await db.refresh(existing_admin)
+        return existing_admin
+    
+    db.add(new_admin)
+    await db.flush()
+    await db.refresh(new_admin)
+    
+    return new_admin
