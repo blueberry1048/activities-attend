@@ -3,7 +3,7 @@
 // ============================================================
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { Html5QrcodeScanner } from 'html5-qrcode'
+import { Html5Qrcode } from 'html5-qrcode'
 import { ArrowLeft, Camera, CheckCircle, XCircle, AlertCircle, Users, Clock, MapPin, Calendar, RefreshCw, QrCode } from 'lucide-react'
 import { getEvent, checkIn, getParticipants } from '../../api/axios'
 
@@ -22,8 +22,7 @@ export const Scanner = () => {
   const [stats, setStats] = useState({ total: 0, checkedIn: 0 })
   
   // 掃描器引用
-  const scannerRef = useRef(null)
-  const html5QrcodeScannerRef = useRef(null)
+  const html5QrcodeRef = useRef(null)
   
   // ----------------------------------------
   // 載入活動和參加者資訊
@@ -57,8 +56,10 @@ export const Scanner = () => {
     }
     fetchData()
   }, [eventId])
-  
+
+  // ----------------------------------------
   // 重新整理統計資料
+  // ----------------------------------------
   const refreshStats = async () => {
     try {
       const participantsData = await getParticipants(eventId)
@@ -75,58 +76,70 @@ export const Scanner = () => {
   }
   
   // ----------------------------------------
-  // 初始化 QR Code 掃描器
+  // 開始掃描
   // ----------------------------------------
-  useEffect(() => {
-    if (!scanning || !scannerRef.current) return
+  const startScanning = async () => {
+    setCameraError(null)
+    setScanning(true)
     
-    // 設定 QR Code 掃描器
-    const config = {
-      fps: 10, // 每秒幀數
-      qrbox: { width: 250, height: 250 }, // 掃描框大小
-      aspectRatio: 1.0
-    }
-    
-    // 建立掃描器實例
-    html5QrcodeScannerRef.current = new Html5QrcodeScanner(
-      "qr-reader",
-      config,
-      /* verbose= */ false
-    )
-    
-    // 處理掃描結果
-    html5QrcodeScannerRef.current.render(
-      (decodedText) => {
-        // 成功掃描到 QR Code
-        handleScanSuccess(decodedText)
-      },
-      (errorMessage) => {
-        // 掃描錯誤 (忽略，通常是因為沒有偵測到 QR Code)
+    try {
+      // 建立掃描器實例
+      html5QrcodeRef.current = new Html5Qrcode("qr-reader")
+      
+      // 請求相機權限並開始掃描
+      await html5QrcodeRef.current.start(
+        { facingMode: "environment" }, // 使用後鏡頭
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 }
+        },
+        (decodedText) => {
+          // 成功掃描到 QR Code
+          handleScanSuccess(decodedText)
+        },
+        (errorMessage) => {
+          // 掃描錯誤 (忽略，通常是因為沒有偵測到 QR Code)
+          // console.log("Scan error:", errorMessage)
+        }
+      )
+    } catch (err) {
+      console.error('相機錯誤:', err)
+      setScanning(false)
+      
+      // 處理不同的錯誤
+      if (err.toString().includes('Permission')) {
+        setCameraError('無法存取相機。請確保已授予相機權限，並且使用 HTTPS 連線。')
+      } else if (err.toString().includes('NotFound') || err.toString().includes('not found')) {
+        setCameraError('找不到相機設備。')
+      } else if (err.toString().includes('NotAllowed')) {
+        setCameraError('相機權限被拒絕。請在瀏覽器設定中允許相機存取。')
+      } else {
+        setCameraError(`相機啟動失敗: ${err.message || err}`)
       }
-    )
-    
-    // 清理函式
-    return () => {
-      if (html5QrcodeScannerRef.current) {
-        html5QrcodeScannerRef.current.clear().catch(err => {
-          console.error('清除掃描器失敗:', err)
-        })
+    }
+  }
+  
+  // ----------------------------------------
+  // 停止掃描
+  // ----------------------------------------
+  const stopScanning = async () => {
+    if (html5QrcodeRef.current && html5QrcodeRef.current.isScanning) {
+      try {
+        await html5QrcodeRef.current.stop()
+        html5QrcodeRef.current = null
+      } catch (err) {
+        console.error('停止掃描失敗:', err)
       }
     }
-  }, [scanning])
+    setScanning(false)
+  }
   
   // ----------------------------------------
   // 處理掃描成功
   // ----------------------------------------
   const handleScanSuccess = async (qrCode) => {
     // 停止掃描
-    if (html5QrcodeScannerRef.current) {
-      try {
-        await html5QrcodeScannerRef.current.pause(true)
-      } catch (err) {
-        console.error('暫停掃描器失敗:', err)
-      }
-    }
+    await stopScanning()
     
     setLoading(true)
     
@@ -169,34 +182,7 @@ export const Scanner = () => {
   const continueScan = async () => {
     setResult(null)
     setError(null)
-    
-    if (html5QrcodeScannerRef.current) {
-      try {
-        await html5QrcodeScannerRef.current.resume()
-      } catch (err) {
-        console.error('恢復掃描失敗:', err)
-      }
-    }
-  }
-  
-  // ----------------------------------------
-  // 開始掃描
-  // ----------------------------------------
-  const startScanning = () => {
-    setScanning(true)
-    setCameraError(null)
-  }
-  
-  // ----------------------------------------
-  // 停止掃描
-  // ----------------------------------------
-  const stopScanning = () => {
-    setScanning(false)
-    if (html5QrcodeScannerRef.current) {
-      html5QrcodeScannerRef.current.clear().catch(err => {
-        console.error('清除掃描器失敗:', err)
-      })
-    }
+    await startScanning()
   }
   
   // ----------------------------------------
@@ -206,6 +192,17 @@ export const Scanner = () => {
     if (!timeStr) return ''
     return timeStr
   }
+  
+  // ----------------------------------------
+  // 組件卸載時清理
+  // ----------------------------------------
+  useEffect(() => {
+    return () => {
+      if (html5QrcodeRef.current && html5QrcodeRef.current.isScanning) {
+        html5QrcodeRef.current.stop().catch(err => console.error('清理掃描器失敗:', err))
+      }
+    }
+  }, [])
   
   // ----------------------------------------
   // 渲染
@@ -410,7 +407,7 @@ export const Scanner = () => {
           ) : (
             <>
               {/* 掃描區域 */}
-              <div ref={scannerRef} id="qr-reader" className="p-4"></div>
+              <div id="qr-reader" className="p-4"></div>
               
               {/* 停止按鈕 */}
               <div className="p-4 border-t">
