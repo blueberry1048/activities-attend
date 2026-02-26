@@ -15,7 +15,7 @@
     "env": {
       "BACKEND_URL": {
         "description": "後端服務內部網址 (格式: http://服務名.railway.internal:端口)",
-        "value": "http://activities-attend.railway.internal:8000"
+        "value": "http://activities-attend.railway.internal:8080"
       }
     },
     "name": "activities-attend-frontend",
