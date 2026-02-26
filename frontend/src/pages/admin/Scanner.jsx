@@ -59,6 +59,33 @@ export const Scanner = () => {
   }, [eventId])
 
   // ----------------------------------------
+  // 自動刷新統計資料 (每3秒)
+  // ----------------------------------------
+  useEffect(() => {
+    if (!eventId) return
+    
+    const interval = setInterval(() => {
+      refreshStats()
+    }, 3000)
+    
+    return () => clearInterval(interval)
+  }, [eventId])
+  
+  // ----------------------------------------
+  // 頁面可見時自動刷新統計
+  // ----------------------------------------
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshStats()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
+
+  // ----------------------------------------
   // 重新整理統計資料
   // ----------------------------------------
   const refreshStats = async () => {

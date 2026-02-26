@@ -83,6 +83,21 @@ export const ParticipantView = () => {
   }, [data?.valid, refreshToken])
   
   // ----------------------------------------
+  // 頁面可見時自動刷新 (從背景回來時)
+  // ----------------------------------------
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && data?.valid) {
+        refreshToken()
+        setCountdown(60)
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [data?.valid, refreshToken])
+  
+  // ----------------------------------------
   // 複製連結
   // ----------------------------------------
   const copyLink = () => {
