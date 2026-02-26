@@ -20,6 +20,7 @@ export const Scanner = () => {
   const [error, setError] = useState(null)
   const [cameraError, setCameraError] = useState(null)
   const [stats, setStats] = useState({ total: 0, checkedIn: 0 })
+  const [cameraInfo, setCameraInfo] = useState(null)
   
   // 掃描器引用
   const html5QrcodeRef = useRef(null)
@@ -76,6 +77,19 @@ export const Scanner = () => {
   }
   
   // ----------------------------------------
+  // 獲取可用相機列表
+  // ----------------------------------------
+  const getAvailableCameras = async () => {
+    try {
+      const devices = await Html5Qrcode.getCameras()
+      return devices
+    } catch (err) {
+      console.error('獲取相機列表失敗:', err)
+      return []
+    }
+  }
+  
+  // ----------------------------------------
   // 開始掃描
   // ----------------------------------------
   const startScanning = async () => {
@@ -83,12 +97,43 @@ export const Scanner = () => {
     setScanning(true)
     
     try {
+      // 先獲取可用相機
+      const cameras = await getAvailableCameras()
+      
+      console.log('可用相機:', cameras)
+      
+      if (!cameras || cameras.length === 0) {
+        // 嘗試使用 getUserMedia 直接獲取
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+          stream.getTracks().forEach(track => track.stop())
+          setCameraError('檢測到相機但無法識別。請嘗試重新整理頁面。')
+        } catch (e) {
+          setCameraError('找不到相機設備。請確保手機有相機並授予權限。')
+        }
+        setScanning(false)
+        return
+      }
+      
       // 建立掃描器實例
       html5QrcodeRef.current = new Html5Qrcode("qr-reader")
       
+      // 選擇相機：優先使用後鏡頭
+      let cameraId = cameras[0].id
+      const backCamera = cameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('rear'))
+      if (backCamera) {
+        cameraId = backCamera.id
+      } else if (cameras.length > 1) {
+        // 嘗試第二個相機
+        cameraId = cameras[1].id
+      }
+      
+      console.log('使用相機:', cameraId)
+      setCameraInfo(cameras.find(c => c.id === cameraId)?.label || cameraId)
+      
       // 請求相機權限並開始掃描
       await html5QrcodeRef.current.start(
-        { facingMode: "environment" }, // 使用後鏡頭
+        cameraId,
         {
           fps: 10,
           qrbox: { width: 250, height: 250 }
@@ -98,8 +143,7 @@ export const Scanner = () => {
           handleScanSuccess(decodedText)
         },
         (errorMessage) => {
-          // 掃描錯誤 (忽略，通常是因為沒有偵測到 QR Code)
-          // console.log("Scan error:", errorMessage)
+          // 掃描錯誤 (忽略)
         }
       )
     } catch (err) {
@@ -107,12 +151,13 @@ export const Scanner = () => {
       setScanning(false)
       
       // 處理不同的錯誤
-      if (err.toString().includes('Permission')) {
+      const errorStr = err.toString()
+      if (errorStr.includes('Permission') || errorStr.includes('NotAllowed')) {
         setCameraError('無法存取相機。請確保已授予相機權限，並且使用 HTTPS 連線。')
-      } else if (err.toString().includes('NotFound') || err.toString().includes('not found')) {
-        setCameraError('找不到相機設備。')
-      } else if (err.toString().includes('NotAllowed')) {
-        setCameraError('相機權限被拒絕。請在瀏覽器設定中允許相機存取。')
+      } else if (errorStr.includes('NotFound') || errorStr.includes('not found') || errorStr.includes('no video device')) {
+        setCameraError('找不到相機設備。請確保手機有相機。')
+      } else if (errorStr.includes('NotReadable') || errorStr.includes('in use')) {
+        setCameraError('相機已被其他應用程式使用。請關閉其他使用相機的應用。')
       } else {
         setCameraError(`相機啟動失敗: ${err.message || err}`)
       }
@@ -123,6 +168,7 @@ export const Scanner = () => {
   // 停止掃描
   // ----------------------------------------
   const stopScanning = async () => {
+    setCameraInfo(null)
     if (html5QrcodeRef.current && html5QrcodeRef.current.isScanning) {
       try {
         await html5QrcodeRef.current.stop()
@@ -403,6 +449,11 @@ export const Scanner = () => {
                 <Camera className="h-5 w-5 mr-2" />
                 開始掃描
               </button>
+              
+              {/* 相機資訊 */}
+              {cameraInfo && (
+                <p className="mt-4 text-xs text-gray-500">相機: {cameraInfo}</p>
+              )}
             </div>
           ) : (
             <>
