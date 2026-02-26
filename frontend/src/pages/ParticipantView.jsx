@@ -54,6 +54,17 @@ export const ParticipantView = () => {
     }
   }, [token])
   
+  // 自動刷新檢查報到狀態 (每10秒)
+  useEffect(() => {
+    if (!data?.valid) return
+    
+    const statusTimer = setInterval(() => {
+      refreshToken()
+    }, 10000)
+    
+    return () => clearInterval(statusTimer)
+  }, [data?.valid, refreshToken])
+  
   // 倒數計時器
   useEffect(() => {
     if (!data?.valid) return
@@ -141,6 +152,15 @@ export const ParticipantView = () => {
       </div>
       
       <div className="container mx-auto px-4 -mt-6">
+        {/* 報到狀態卡片 */}
+        {data.is_checked_in && (
+          <div className="max-w-md mx-auto bg-green-50 border-2 border-green-200 rounded-xl p-4 mb-4 text-center">
+            <CheckCircle className="h-10 w-10 text-green-600 mx-auto mb-2" />
+            <h3 className="text-lg font-bold text-green-800">✅ 您已完成報到！</h3>
+            <p className="text-sm text-green-600">感謝您參加本次活動</p>
+          </div>
+        )}
+        
         {/* 活動資訊卡片 */}
         <div className="max-w-md mx-auto bg-white rounded-xl shadow-sm overflow-hidden mb-6">
           <div className="p-6">

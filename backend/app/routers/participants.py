@@ -340,5 +340,6 @@ async def verify_participant_token(
         event_time=event.start_time.strftime("%H:%M") if event.start_time else None,
         event_location=event.location,
         event_description=event.description,
+        is_checked_in=bool(attendance.checked_in_at),  # 報到狀態
         message="驗證成功"
     )

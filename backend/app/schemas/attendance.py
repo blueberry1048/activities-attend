@@ -108,6 +108,7 @@ class ParticipantLinkResponse(BaseModel):
     event_time: Optional[str] = None
     event_location: Optional[str] = None
     event_description: Optional[str] = None
+    is_checked_in: Optional[bool] = False  # 報到狀態
     message: Optional[str] = None
 
 

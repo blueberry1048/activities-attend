@@ -258,107 +258,35 @@ export const Scanner = () => {
       {/* 返回連結 */}
       <Link 
         to="/admin" 
-        className="inline-flex items-center text-primary-600 hover:underline mb-4"
+        className="inline-flex items-center text-primary-600 hover:underline mb-2"
         onClick={stopScanning}
       >
         <ArrowLeft className="h-4 w-4 mr-1" />
-        返回活動管理
+        返回
       </Link>
-      
-      {/* 活動資訊卡片 */}
-      {event && (
-        <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">{event.name}</h2>
-          
-          {/* 活動詳情 */}
-          <div className="grid grid-cols-2 gap-3 text-sm mb-4">
-            {event.event_date && (
-              <div className="flex items-center text-gray-600">
-                <Calendar className="h-4 w-4 mr-2 text-primary-500" />
-                <span>{event.event_date}</span>
-              </div>
-            )}
-            {event.start_time && (
-              <div className="flex items-center text-gray-600">
-                <Clock className="h-4 w-4 mr-2 text-primary-500" />
-                <span>{formatTime(event.start_time)} - {formatTime(event.end_time)}</span>
-              </div>
-            )}
-            {event.location && (
-              <div className="flex items-center text-gray-600 col-span-2">
-                <MapPin className="h-4 w-4 mr-2 text-primary-500" />
-                <span>{event.location}</span>
-              </div>
-            )}
-          </div>
-          
-          {/* 統計資訊 */}
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <Users className="h-5 w-5 mr-2 text-primary-600" />
-                <span className="text-sm font-medium text-gray-700">報到統計</span>
-              </div>
-              <button
-                onClick={refreshStats}
-                className="p-1 text-gray-500 hover:text-primary-600"
-                title="重新整理"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="mt-2 flex items-center justify-between">
-              <div className="text-center flex-1">
-                <div className="text-2xl font-bold text-primary-600">{stats.checkedIn}</div>
-                <div className="text-xs text-gray-500">已報到</div>
-              </div>
-              <div className="text-gray-300">/</div>
-              <div className="text-center flex-1">
-                <div className="text-2xl font-bold text-gray-600">{stats.total}</div>
-                <div className="text-xs text-gray-500">總人數</div>
-              </div>
-              <div className="text-gray-300">/</div>
-              <div className="text-center flex-1">
-                <div className="text-2xl font-bold text-green-600">
-                  {stats.total > 0 ? Math.round((stats.checkedIn / stats.total) * 100) : 0}%
-                </div>
-                <div className="text-xs text-gray-500">出席率</div>
-              </div>
-            </div>
-            
-            {/* 進度條 */}
-            <div className="mt-3 bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-primary-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${stats.total > 0 ? (stats.checkedIn / stats.total) * 100 : 0}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
-      )}
       
       {/* 錯誤訊息 */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-2">
           {error}
         </div>
       )}
       
       {/* 結果顯示 */}
       {result && (
-        <div className={`rounded-xl shadow-sm p-6 mb-4 ${
+        <div className={`rounded-xl shadow-sm p-4 mb-2 ${
           result.success ? 'bg-green-50 border-2 border-green-200' : 'bg-red-50 border-2 border-red-200'
         }`}>
           <div className="text-center">
             {/* 圖示 */}
             {result.success ? (
-              <CheckCircle className="mx-auto h-16 w-16 text-green-600 mb-4" />
+              <CheckCircle className="mx-auto h-12 w-12 text-green-600 mb-2" />
             ) : (
-              <XCircle className="mx-auto h-16 w-16 text-red-600 mb-4" />
+              <XCircle className="mx-auto h-12 w-12 text-red-600 mb-2" />
             )}
             
             {/* 訊息 */}
-            <h3 className={`text-xl font-bold mb-2 ${
+            <h3 className={`text-lg font-bold mb-2 ${
               result.success ? 'text-green-800' : 'text-red-800'
             }`}>
               {result.message}
@@ -366,45 +294,29 @@ export const Scanner = () => {
             
             {/* 參加者資訊 */}
             {result.userName && (
-              <div className="mt-4 text-left bg-white rounded-lg p-4">
-                <div className="flex items-center mb-3">
-                  <QrCode className="h-5 w-5 text-primary-500 mr-2" />
-                  <span className="text-sm font-medium text-gray-700">參加者資訊</span>
-                </div>
-                
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-xs text-gray-400">姓名</p>
-                    <p className="font-semibold text-gray-900">{result.userName}</p>
+              <div className="mt-3 text-left bg-white rounded-lg p-3">
+                <div className="space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-xs text-gray-400">姓名</span>
+                    <span className="font-semibold text-gray-900">{result.userName}</span>
                   </div>
                   
                   {result.userEmail && (
-                    <div>
-                      <p className="text-xs text-gray-400">電子郵件</p>
-                      <p className="text-sm text-gray-600">{result.userEmail}</p>
-                    </div>
-                  )}
-                  
-                  {result.eventName && (
-                    <div>
-                      <p className="text-xs text-gray-400">活動名稱</p>
-                      <p className="text-sm text-gray-600">{result.eventName}</p>
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-400">郵箱</span>
+                      <span className="text-sm text-gray-600 truncate max-w-[150px]">{result.userEmail}</span>
                     </div>
                   )}
                   
                   {result.checkedInAt && (
-                    <div>
-                      <p className="text-xs text-gray-400">報到時間</p>
-                      <p className="text-sm text-gray-600">
-                        {new Date(result.checkedInAt).toLocaleString('zh-TW', {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
+                    <div className="flex justify-between">
+                      <span className="text-xs text-gray-400">時間</span>
+                      <span className="text-sm text-gray-600">
+                        {new Date(result.checkedInAt).toLocaleTimeString('zh-TW', {
                           hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit'
+                          minute: '2-digit'
                         })}
-                      </p>
+                      </span>
                     </div>
                   )}
                 </div>
@@ -414,57 +326,57 @@ export const Scanner = () => {
             {/* 繼續掃描按鈕 */}
             <button
               onClick={continueScan}
-              className="mt-4 inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              className="mt-3 inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg text-sm"
             >
-              <Camera className="h-5 w-5 mr-2" />
+              <Camera className="h-4 w-4 mr-1" />
               繼續掃描
             </button>
           </div>
         </div>
       )}
       
-      {/* 掃描區域 */}
+      {/* 掃描區域 - 放在最上面 */}
       {!result && (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-2">
           {!scanning ? (
-            <div className="p-8 text-center">
-              <Camera className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">準備掃描</h3>
-              <p className="text-gray-500 mb-6">點擊下方按鈕開啟相機進行掃描</p>
+            <div className="p-6 text-center">
+              <Camera className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+              <h3 className="text-base font-semibold text-gray-900 mb-1">準備掃描</h3>
+              <p className="text-gray-500 text-sm mb-4">點擊下方按鈕開啟相機</p>
               
               {/* 相機權限錯誤 */}
               {cameraError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
                   <div className="flex items-start">
-                    <AlertCircle className="h-5 w-5 text-red-600 mr-2 flex-shrink-0" />
-                    <p className="text-sm text-red-700 text-left">{cameraError}</p>
+                    <AlertCircle className="h-4 w-4 text-red-600 mr-2 flex-shrink-0" />
+                    <p className="text-xs text-red-700 text-left">{cameraError}</p>
                   </div>
                 </div>
               )}
               
               <button
                 onClick={startScanning}
-                className="inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                className="inline-flex items-center px-5 py-2.5 bg-primary-600 text-white rounded-lg text-sm"
               >
-                <Camera className="h-5 w-5 mr-2" />
+                <Camera className="h-4 w-4 mr-1" />
                 開始掃描
               </button>
               
               {/* 相機資訊 */}
               {cameraInfo && (
-                <p className="mt-4 text-xs text-gray-500">相機: {cameraInfo}</p>
+                <p className="mt-2 text-xs text-gray-400">📷 {cameraInfo}</p>
               )}
             </div>
           ) : (
             <>
               {/* 掃描區域 */}
-              <div id="qr-reader" className="p-4"></div>
+              <div id="qr-reader" className="p-2"></div>
               
               {/* 停止按鈕 */}
-              <div className="p-4 border-t">
+              <div className="p-2 border-t">
                 <button
                   onClick={stopScanning}
-                  className="w-full py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  className="w-full py-2 text-gray-500 text-sm"
                 >
                   停止掃描
                 </button>
@@ -474,42 +386,109 @@ export const Scanner = () => {
         </div>
       )}
       
-      {/* 載入中 */}
-      {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 text-center">
-            <div className="spinner mx-auto mb-4"></div>
-            <p className="text-gray-700">處理中...</p>
+      {/* 活動資訊和統計 - 放在下面 */}
+      {event && (
+        <div className="bg-white rounded-xl shadow-sm p-3 mb-2">
+          <h2 className="text-base font-semibold text-gray-900 mb-2 truncate">{event.name}</h2>
+          
+          {/* 活動詳情 - 單行顯示 */}
+          <div className="flex flex-wrap gap-2 text-xs text-gray-600 mb-3">
+            {event.event_date && (
+              <span className="flex items-center">
+                <Calendar className="h-3 w-3 mr-1 text-primary-500" />
+                {event.event_date}
+              </span>
+            )}
+            {event.start_time && (
+              <span className="flex items-center">
+                <Clock className="h-3 w-3 mr-1 text-primary-500" />
+                {formatTime(event.start_time)}
+              </span>
+            )}
+            {event.location && (
+              <span className="flex items-center truncate max-w-[120px]">
+                <MapPin className="h-3 w-3 mr-1 text-primary-500" />
+                {event.location}
+              </span>
+            )}
+          </div>
+          
+          {/* 統計資訊 */}
+          <div className="bg-gray-50 rounded-lg p-2">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-700">報到統計</span>
+              <button
+                onClick={refreshStats}
+                className="p-1 text-gray-400 hover:text-primary-600"
+                title="重新整理"
+              >
+                <RefreshCw className="h-3 w-3" />
+              </button>
+            </div>
+            <div className="flex items-center justify-around">
+              <div className="text-center">
+                <div className="text-xl font-bold text-primary-600">{stats.checkedIn}</div>
+                <div className="text-xs text-gray-500">已報到</div>
+              </div>
+              <div className="text-gray-300">/</div>
+              <div className="text-center">
+                <div className="text-xl font-bold text-gray-600">{stats.total}</div>
+                <div className="text-xs text-gray-500">總人數</div>
+              </div>
+              <div className="text-gray-300">/</div>
+              <div className="text-center">
+                <div className="text-xl font-bold text-green-600">
+                  {stats.total > 0 ? Math.round((stats.checkedIn / stats.total) * 100) : 0}%
+                </div>
+                <div className="text-xs text-gray-500">出席率</div>
+              </div>
+            </div>
+            
+            {/* 進度條 */}
+            <div className="mt-2 bg-gray-200 rounded-full h-1.5">
+              <div 
+                className="bg-primary-500 h-1.5 rounded-full"
+                style={{ width: `${stats.total > 0 ? (stats.checkedIn / stats.total) * 100 : 0}%` }}
+              ></div>
+            </div>
           </div>
         </div>
       )}
       
       {/* 參加者列表預覽 */}
       {participants.length > 0 && !result && !scanning && (
-        <div className="bg-white rounded-xl shadow-sm mt-4">
-          <div className="p-4 border-b">
-            <h3 className="font-semibold text-gray-900 flex items-center">
-              <Users className="h-5 w-5 mr-2 text-primary-500" />
-              參加者列表 ({participants.length})
+        <div className="bg-white rounded-xl shadow-sm">
+          <div className="p-2 border-b">
+            <h3 className="font-semibold text-gray-900 text-sm flex items-center">
+              <Users className="h-4 w-4 mr-1 text-primary-500" />
+              參加者 ({participants.length})
             </h3>
           </div>
-          <div className="max-h-64 overflow-y-auto">
-            {participants.slice(0, 10).map((p) => (
-              <div key={p.id} className="p-3 border-b last:border-b-0 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-900">{p.name}</p>
-                  {p.email && <p className="text-xs text-gray-500">{p.email}</p>}
+          <div className="max-h-40 overflow-y-auto">
+            {participants.slice(0, 8).map((p) => (
+              <div key={p.id} className="p-2 border-b last:border-b-0 flex items-center justify-between">
+                <div className="truncate flex-1">
+                  <p className="font-medium text-gray-900 text-sm truncate">{p.name}</p>
+                  {p.email && <p className="text-xs text-gray-500 truncate">{p.email}</p>}
                 </div>
-                <div className="text-xs text-gray-400">
-                  <QrCode className="h-4 w-4" />
-                </div>
+                <QrCode className="h-4 w-4 text-gray-300 flex-shrink-0 ml-2" />
               </div>
             ))}
-            {participants.length > 10 && (
-              <div className="p-3 text-center text-sm text-gray-500">
-                還有 {participants.length - 10} 位參加者...
+            {participants.length > 8 && (
+              <div className="p-2 text-center text-xs text-gray-500">
+                還有 {participants.length - 8} 位...
               </div>
             )}
+          </div>
+        </div>
+      )}
+      
+      {/* 載入中 */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-4 text-center">
+            <div className="spinner mx-auto mb-2"></div>
+            <p className="text-gray-700 text-sm">處理中...</p>
           </div>
         </div>
       )}
