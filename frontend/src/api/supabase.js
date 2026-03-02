@@ -424,13 +424,24 @@ export const checkIn = async (qrCode, eventId) => {
   }
   
   // 2. 更新報到狀態
+  // 先取得 ID，然後用 ID 更新，這樣更精確
+  const { data: attendanceToUpdate, error: fetchError } = await supabase
+    .from('event_attendances')
+    .select('id')
+    .eq('qr_token', qrCode)
+    .limit(1)
+    .maybeSingle()
+    
+  if (fetchError) throw fetchError
+  if (!attendanceToUpdate) throw new Error('找不到報到記錄')
+  
   const { data, error } = await supabase
     .from('event_attendances')
     .update({
       is_checked_in: true,
       checked_in_at: new Date().toISOString()
     })
-    .eq('qr_token', qrCode)
+    .eq('id', attendanceToUpdate.id)
     .select(`
       *,
       user:users(*),
