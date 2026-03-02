@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Calendar, MapPin, Clock, Users, QrCode, Plus, Edit, Trash2, UserPlus } from 'lucide-react'
-import { getEvents, deleteEvent } from '../../api/axios'
+import { getEvents, deleteEvent } from '../../api/supabase'
 
 export const AdminDashboard = () => {
   // 狀態
@@ -46,7 +46,8 @@ export const AdminDashboard = () => {
       // 重新載入列表
       setEvents(events.filter(e => e.id !== eventId))
     } catch (err) {
-      alert(err.response?.data?.detail || '刪除失敗')
+      console.error('刪除失敗:', err)
+      alert(err.message || '刪除失敗')
     } finally {
       setDeletingId(null)
     }

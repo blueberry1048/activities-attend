@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Plus, Users, Download, Mail, Trash2, Copy, QrCode, RefreshCw, ExternalLink } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
-import { getEvent, createParticipant, createParticipantsBulk, getParticipants } from '../../api/axios'
+import { getEvent, createParticipant, createParticipantsBulk, getParticipants, deleteParticipant } from '../../api/supabase'
 
 export const ParticipantManagement = () => {
   const { id: eventId } = useParams()
@@ -41,13 +41,24 @@ export const ParticipantManagement = () => {
         
         try {
           const participantsData = await getParticipants(eventId)
-          setParticipants(participantsData.participants || [])
+          // 轉換 Supabase 回傳的資料結構
+          const formattedParticipants = (participantsData || []).map(p => ({
+            id: p.id,
+            user_id: p.user_id,
+            name: p.user?.full_name || '未知',
+            email: p.user?.email || '',
+            phone: p.user?.phone || '',
+            qr_code: p.qr_token,
+            is_checked_in: p.is_checked_in,
+            checked_in_at: p.checked_in_at
+          }))
+          setParticipants(formattedParticipants)
         } catch (pErr) {
-          console.log('取得參加者失敗:', pErr)
           setParticipants([])
         }
       } catch (err) {
-        setError(err.response?.data?.detail || '載入活動失敗')
+        console.error('載入活動失敗:', err)
+        setError(err.message || '載入活動失敗')
       } finally {
         setLoading(false)
       }
@@ -72,19 +83,30 @@ export const ParticipantManagement = () => {
     
     try {
       const newParticipant = await createParticipant(eventId, {
-        name: participantName,
-        email: participantEmail || null,
-        phone: participantPhone || null
+        full_name: participantName,
+        email: participantEmail || `${Date.now()}@placeholder.com` // 使用假的 email 避免 unique 錯誤
       })
       
-      setParticipants([...participants, newParticipant])
+      // newParticipant 回傳 { user, attendance, qr_token }
+      // 需要組合成頁面需要的格式
+      const participantWithQR = {
+        id: newParticipant.attendance.id, // 使用 attendance ID
+        user_id: newParticipant.user.id,
+        name: newParticipant.user.full_name,
+        email: newParticipant.user.email,
+        qr_code: newParticipant.qr_token,
+        is_checked_in: false
+      }
+      
+      setParticipants([...participants, participantWithQR])
       setParticipantName('')
       setParticipantEmail('')
       setParticipantPhone('')
       setShowForm(false)
       setSuccess(`已為 ${participantName} 建立 QR Code`)
     } catch (err) {
-      setError(err.response?.data?.detail || '建立失敗，請稍後再試')
+      console.error('建立參加者失敗:', err)
+      setError(err.message || '建立失敗，請稍後再試')
     } finally {
       setSaving(false)
     }
@@ -122,15 +144,50 @@ export const ParticipantManagement = () => {
     setSuccess(null)
     
     try {
-      const participantsData = names.map(name => ({ name }))
-      const result = await createParticipantsBulk(eventId, participantsData)
+      const participantsData = names.map((name, index) => ({ 
+        full_name: name, 
+        email: `${Date.now()}-${index}@placeholder.com` // 使用假的 email
+      }))
+      const results = await createParticipantsBulk(eventId, participantsData)
       
-      setParticipants([...participants, ...result.participants])
+      // 轉換結果格式
+      const formattedResults = results.map(r => ({
+        id: r.attendance.id,
+        user_id: r.user.id,
+        name: r.user.full_name,
+        email: r.user.email,
+        qr_code: r.qr_token,
+        is_checked_in: false
+      }))
+      
+      setParticipants([...participants, ...formattedResults])
       setBulkInput('')
       setShowBulkForm(false)
-      setSuccess(`已成功建立 ${result.total} 位參加者的 QR Code`)
+      setSuccess(`已成功建立 ${result.length} 位參加者的 QR Code`)
     } catch (err) {
-      setError(err.response?.data?.detail || '批量建立失敗，請稍後再試')
+      console.error('批量建立失敗:', err)
+      setError(err.message || '批量建立失敗，請稍後再試')
+    } finally {
+      setSaving(false)
+    }
+  }
+  
+  // ----------------------------------------
+  // 刪除參加者
+  // ----------------------------------------
+  const handleDeleteParticipant = async (attendanceId, participantName) => {
+    if (!window.confirm(`確定要刪除 ${participantName} 嗎？此操作無法復原。`)) {
+      return
+    }
+    
+    try {
+      setSaving(true)
+      await deleteParticipant(attendanceId)
+      setParticipants(participants.filter(p => p.id !== attendanceId))
+      setSuccess('已刪除參加者')
+    } catch (err) {
+      console.error('刪除失敗:', err)
+      setError(err.message || '刪除失敗')
     } finally {
       setSaving(false)
     }
@@ -456,6 +513,14 @@ export const ParticipantManagement = () => {
                   >
                     <Download className="h-5 w-5" />
                   </button>
+                  
+                  <button
+                    onClick={() => handleDeleteParticipant(participant.id, participant.name)}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    title="刪除參加者"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
                 </div>
                 
                 {/* QR Code 顯示 */}
@@ -464,7 +529,7 @@ export const ParticipantManagement = () => {
                     <div className="flex flex-col items-center">
                       <QRCodeSVG
                         id={`qr-${participant.id}`}
-                        value={participant.qr_code}
+                        value={`${window.location.origin}/participants/${participant.qr_code}`}
                         size={150}
                         level={"H"}
                         includeMargin={true}

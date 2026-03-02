@@ -17,7 +17,10 @@ import { Navbar } from './components/Navbar'
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{
+      v7_startTransition: true,
+      v7_relativeSplatPath: true
+    }}>
       <AuthProvider>
         <div className="min-h-screen bg-gray-50">
           {/* 導航欄 */}
@@ -68,6 +71,13 @@ function App() {
               <Route path="/admin/participants/:id" element={
                 <ProtectedRoute requireAdmin={true}>
                   <ParticipantManagement />
+                </ProtectedRoute>
+              } />
+
+              {/* Helper 掃描路由 */}
+              <Route path="/scan/:eventId" element={
+                <ProtectedRoute requireHelper={true}>
+                  <Scanner />
                 </ProtectedRoute>
               } />
               

@@ -3,7 +3,7 @@
 // ============================================================
 // 提供全域的認證狀態管理
 import { createContext, useContext, useState, useEffect } from 'react'
-import { login as apiLogin, getCurrentUser } from '../api/axios'
+import { login as supabaseLogin, logout as supabaseLogout, getCurrentUser, onAuthStateChange } from '../api/supabase'
 
 // 建立 Context
 const AuthContext = createContext(null)
@@ -16,48 +16,54 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null)
   
   // ----------------------------------------
-  // 初始化：檢查 localStorage 中的 token
+  // 初始化：檢查 localStorage 中的 session
   // ----------------------------------------
   useEffect(() => {
     const initAuth = async () => {
-      const token = localStorage.getItem('token')
-      if (token) {
-        try {
-          // 嘗試取得使用者資訊
-          const userData = await getCurrentUser()
-          setUser(userData)
-        } catch (err) {
-          // Token 無效，清除 localStorage
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
-        }
+      try {
+        // 嘗試取得使用者資訊
+        const userData = await getCurrentUser()
+        setUser(userData)
+      } catch (err) {
+        // Session 無效，清除 localStorage
       }
       setLoading(false)
     }
     
     initAuth()
+    
+    // 訂閱認證狀態變化
+    const { data: { subscription } } = onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+      } else if (session) {
+        getCurrentUser().then(setUser).catch(console.error)
+      }
+    })
+    
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
   
   // ----------------------------------------
   // 登入函式
   // ----------------------------------------
-  const login = async (username, password) => {
+  const login = async (email, password) => {
     try {
       setError(null)
-      const response = await apiLogin(username, password)
       
-      // 儲存 token
-      localStorage.setItem('token', response.access_token)
+      // Supabase 登入 (使用 email)
+      const response = await supabaseLogin(email, password)
       
       // 取得使用者資訊
       const userData = await getCurrentUser()
       setUser(userData)
-      localStorage.setItem('user', JSON.stringify(userData))
       
       return userData
     } catch (err) {
       // 登入失敗
-      const message = err.response?.data?.detail || '登入失敗，請檢查帳號密碼'
+      const message = err.message || '登入失敗，請檢查帳號密碼'
       setError(message)
       throw new Error(message)
     }
@@ -66,16 +72,24 @@ export const AuthProvider = ({ children }) => {
   // ----------------------------------------
   // 登出函式
   // ----------------------------------------
-  const logout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setUser(null)
+  const logout = async () => {
+    try {
+      await supabaseLogout()
+      setUser(null)
+    } catch (err) {
+      console.error('登出失敗', err)
+    }
   }
   
   // ----------------------------------------
   // 檢查是否為管理員
   // ----------------------------------------
   const isAdmin = user?.is_admin === true
+  
+  // ----------------------------------------
+  // 檢查是否為 Helper
+  // ----------------------------------------
+  const isHelper = user?.is_helper === true
   
   // ----------------------------------------
   // 提供給子元件的值
@@ -87,6 +101,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     isAdmin,
+    isHelper,
     isAuthenticated: !!user,
   }
   

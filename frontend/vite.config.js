@@ -7,13 +7,7 @@ export default defineConfig({
   // 生產環境的基礎路徑
   base: '/',
   server: {
-    port: 3001,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8001',
-        changeOrigin: true,
-      }
-    }
+    port: 3001
   },
   // 構建優化
   build: {

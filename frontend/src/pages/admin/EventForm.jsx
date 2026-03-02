@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Save, ArrowLeft } from 'lucide-react'
-import { getEvent, createEvent, updateEvent } from '../../api/axios'
+import { getEvent, createEvent, updateEvent } from '../../api/supabase'
 
 export const EventForm = () => {
   const { id: eventId } = useParams()
@@ -42,7 +42,8 @@ export const EventForm = () => {
           }
           setFormData(formattedData)
         } catch (err) {
-          setError(err.response?.data?.detail || '載入活動失敗')
+          console.error('載入活動失敗:', err)
+          setError(err.message || '載入活動失敗')
         } finally {
           setFetching(false)
         }
@@ -87,7 +88,8 @@ export const EventForm = () => {
       // 成功後返回儀表板
       navigate('/admin')
     } catch (err) {
-      setError(err.response?.data?.detail || '儲存失敗')
+      console.error('儲存失敗:', err)
+      setError(err.message || '儲存失敗')
     } finally {
       setLoading(false)
     }

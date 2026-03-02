@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Html5Qrcode } from 'html5-qrcode'
 import { ArrowLeft, Camera, CheckCircle, XCircle, AlertCircle, Users, Clock, MapPin, Calendar, RefreshCw, QrCode } from 'lucide-react'
-import { getEvent, checkIn, getParticipants } from '../../api/axios'
+import { getEvent, checkIn, getParticipants } from '../../api/supabase'
 
 export const Scanner = () => {
   const { eventId } = useParams()
@@ -37,22 +37,34 @@ export const Scanner = () => {
         
         // 取得參加者列表
         const participantsData = await getParticipants(eventId)
-        setParticipants(participantsData.participants || [])
+        
+        // 轉換 Supabase 回傳的資料結構
+        const formattedParticipants = (participantsData || []).map(p => ({
+          id: p.id,
+          user_id: p.user_id,
+          name: p.user?.full_name || '未知',
+          email: p.user?.email || '',
+          is_checked_in: p.is_checked_in,
+          checked_in_at: p.checked_in_at
+        }))
+        
+        setParticipants(formattedParticipants)
         
         // 計算統計資料
-        const total = participantsData.total || 0
-        const checkedIn = participantsData.participants?.filter(p => {
-          // 假設有 is_checked_in 欄位，暫時用 localStorage 記錄
-          return localStorage.getItem(`checked_in_${eventId}_${p.id}`) === 'true'
+        const total = participantsData.length || 0
+        const checkedIn = participantsData?.filter(p => {
+          // 假設有 is_checked_in 欄位
+          return p.is_checked_in === true
         }).length || 0
         
         // 從活動資料取得已報到人數
         setStats({
-          total: eventData.total_participants || total,
-          checkedIn: eventData.checked_in_count || checkedIn
+          total: total,
+          checkedIn: checkedIn
         })
       } catch (err) {
-        setError(err.response?.data?.detail || '載入活動失敗')
+        console.error('載入活動失敗:', err)
+        setError(err.message || '載入活動失敗')
       }
     }
     fetchData()
@@ -91,12 +103,25 @@ export const Scanner = () => {
   const refreshStats = async () => {
     try {
       const participantsData = await getParticipants(eventId)
-      const eventData = await getEvent(eventId)
       
-      setParticipants(participantsData.participants || [])
+      // 轉換 Supabase 回傳的資料結構
+      const formattedParticipants = (participantsData || []).map(p => ({
+        id: p.id,
+        user_id: p.user_id,
+        name: p.user?.full_name || '未知',
+        email: p.user?.email || '',
+        is_checked_in: p.is_checked_in,
+        checked_in_at: p.checked_in_at
+      }))
+      
+      setParticipants(formattedParticipants)
+      
+      const total = formattedParticipants.length || 0
+      const checkedIn = participantsData?.filter(p => p.is_checked_in === true).length || 0
+      
       setStats({
-        total: eventData.total_participants || participantsData.total || 0,
-        checkedIn: eventData.checked_in_count || 0
+        total: total,
+        checkedIn: checkedIn
       })
     } catch (err) {
       console.error('重新整理失敗:', err)
@@ -127,8 +152,6 @@ export const Scanner = () => {
       // 先獲取可用相機
       const cameras = await getAvailableCameras()
       
-      console.log('可用相機:', cameras)
-      
       if (!cameras || cameras.length === 0) {
         // 嘗試使用 getUserMedia 直接獲取
         try {
@@ -155,7 +178,6 @@ export const Scanner = () => {
         cameraId = cameras[1].id
       }
       
-      console.log('使用相機:', cameraId)
       setCameraInfo(cameras.find(c => c.id === cameraId)?.label || cameraId)
       
       // 請求相機權限並開始掃描
@@ -217,33 +239,51 @@ export const Scanner = () => {
     setLoading(true)
     
     try {
-      // 發送報到請求
-      const response = await checkIn(qrCode, eventId)
+      // 如果是網址，則提取 token
+      let token = qrCode
+      if (qrCode.includes('/participants/')) {
+        const url = new URL(qrCode)
+        token = url.pathname.split('/participants/')[1] || qrCode
+      }
       
-      // 記錄已報到（用於本地顯示）
-      localStorage.setItem(`checked_in_${eventId}_${response.user_id}`, 'true')
+      // 發送報到請求
+      const response = await checkIn(token, eventId)
       
       setResult({
-        success: response.success,
-        message: response.message,
-        userName: response.user_name,
-        userEmail: response.user_email,
-        eventName: response.event_name,
+        success: true,
+        message: '報到成功！',
+        userName: response.user?.full_name || response.user?.email,
+        userEmail: response.user?.email,
+        eventName: response.event?.name,
         checkedInAt: response.checked_in_at
       })
       
       // 刷新統計
       refreshStats()
+      
+      // 自動繼續掃描 (2秒後)
+      setTimeout(async () => {
+        setResult(null)
+        setError(null)
+        await startScanning()
+      }, 2000)
     } catch (err) {
       // 報到失敗
       setResult({
         success: false,
-        message: err.response?.data?.detail || '報到失敗，請重試',
+        message: err.message || '報到失敗，請重試',
         userName: null,
         userEmail: null,
         eventName: null,
         checkedInAt: null
       })
+      
+      // 自動繼續掃描 (2秒後)
+      setTimeout(async () => {
+        setResult(null)
+        setError(null)
+        await startScanning()
+      }, 2000)
     } finally {
       setLoading(false)
     }
@@ -284,7 +324,7 @@ export const Scanner = () => {
     <div className="max-w-lg mx-auto">
       {/* 返回連結 */}
       <Link 
-        to="/admin" 
+        to="/" 
         className="inline-flex items-center text-primary-600 hover:underline mb-2"
         onClick={stopScanning}
       >
@@ -495,7 +535,10 @@ export const Scanner = () => {
             {participants.slice(0, 8).map((p) => (
               <div key={p.id} className="p-2 border-b last:border-b-0 flex items-center justify-between">
                 <div className="truncate flex-1">
-                  <p className="font-medium text-gray-900 text-sm truncate">{p.name}</p>
+                  <p className="font-medium text-gray-900 text-sm truncate">
+                    {p.is_checked_in && <CheckCircle className="inline h-3 w-3 text-green-500 mr-1" />}
+                    {p.name}
+                  </p>
                   {p.email && <p className="text-xs text-gray-500 truncate">{p.email}</p>}
                 </div>
                 <QrCode className="h-4 w-4 text-gray-300 flex-shrink-0 ml-2" />

@@ -1,7 +1,7 @@
 // ============================================================
 // 登入頁面
 // ============================================================
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { User, Lock, LogIn } from 'lucide-react'
@@ -19,8 +19,18 @@ export const Login = () => {
   // ----------------------------------------
   // 初始化：如果已登入，導向首頁
   // ----------------------------------------
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      if (isAdmin) {
+        navigate('/admin', { replace: true })
+      } else {
+        navigate('/', { replace: true })
+      }
+    }
+  }, [isAuthenticated, loading, isAdmin, navigate])
+  
+  // 如果已登入且正在載入中，不顯示表單
   if (!loading && isAuthenticated) {
-    navigate(isAdmin ? '/admin' : '/')
     return null
   }
   
@@ -64,10 +74,10 @@ export const Login = () => {
         {/* 登入表單 */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 使用者名稱 */}
+            {/* 電子郵件 */}
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                使用者名稱
+                電子郵件
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -75,11 +85,11 @@ export const Login = () => {
                 </div>
                 <input
                   id="username"
-                  type="text"
+                  type="email"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="請輸入使用者名稱"
+                  placeholder="請輸入電子郵件"
                   required
                 />
               </div>

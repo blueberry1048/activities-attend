@@ -1,16 +1,20 @@
 // ============================================================
 // 活動列表頁面 (參加者)
 // ============================================================
+import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Calendar, MapPin, Clock, Users, CheckCircle } from 'lucide-react'
-import { getEvents } from '../api/axios'
+import { Calendar, MapPin, Clock, Users, CheckCircle, QrCode } from 'lucide-react'
+import { getEvents } from '../api/supabase'
+import { useAuth } from '../contexts/AuthContext'
 
 export const EventList = () => {
   // 狀態
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const { isHelper } = useAuth()
+  const navigate = useNavigate()
   
   // ----------------------------------------
   // 載入活動列表
@@ -94,10 +98,10 @@ export const EventList = () => {
       ) : (
         <div className="grid gap-6">
           {events.map((event) => (
-            <Link
+            <div
               key={event.id}
-              to={`/event/${event.id}`}
-              className="block bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100"
+              onClick={() => navigate(`/event/${event.id}`)}
+              className="block bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100 cursor-pointer"
             >
               <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                 {/* 活動資訊 */}
@@ -146,9 +150,20 @@ export const EventList = () => {
                       <span>已報到</span>
                     </div>
                   </div>
+                  
+                  {/* Helper 掃描按鈕 */}
+                  {isHelper && (
+                    <Link
+                      to={`/scan/${event.id}`}
+                      className="ml-4 inline-flex items-center px-3 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+                    >
+                      <QrCode className="h-4 w-4 mr-1" />
+                      掃描報到
+                    </Link>
+                  )}
                 </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}

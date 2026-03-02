@@ -11,9 +11,10 @@ import { useAuth } from '../contexts/AuthContext'
  * 
  * @param {React.ReactNode} children - 子元件
  * @param {boolean} requireAdmin - 是否需要管理員權限
+ * @param {boolean} requireHelper - 是否需要 Helper 權限
  */
-export const ProtectedRoute = ({ children, requireAdmin = false }) => {
-  const { isAuthenticated, isAdmin, loading } = useAuth()
+export const ProtectedRoute = ({ children, requireAdmin = false, requireHelper = false }) => {
+  const { isAuthenticated, isAdmin, isHelper, loading } = useAuth()
   const location = useLocation()
   
   // 載入中顯示
@@ -32,7 +33,13 @@ export const ProtectedRoute = ({ children, requireAdmin = false }) => {
   
   // 需要管理員權限但用戶不是管理員
   if (requireAdmin && !isAdmin) {
-    // 一般用戶導向首頁
+    // 一般用戶或 Helper 導向首頁
+    return <Navigate to="/" replace />
+  }
+  
+  // 需要 Helper 權限但用戶不是 Helper
+  if (requireHelper && !isHelper) {
+    // 非 Helper 導向首頁
     return <Navigate to="/" replace />
   }
   
