@@ -338,7 +338,7 @@ export const verifyParticipantToken = async (token) => {
   // Token 格式: eventId-userId-timestamp
   const [eventId] = token.split('-')
   
-  // 1. 查詢報到記錄
+  // 1. 查詢報到記錄 - 使用 maybeSingle 避免 PGRST116 錯誤
   const { data: attendance, error } = await supabase
     .from('event_attendances')
     .select(`
@@ -347,9 +347,10 @@ export const verifyParticipantToken = async (token) => {
       user:users(*)
     `)
     .eq('qr_token', token)
-    .single()
+    .maybeSingle()
     
   if (error) throw new Error('無效的 QR Code')
+  if (!attendance) throw new Error('找不到此 QR Code 的報到記錄')
   
   return attendance
 }
@@ -365,9 +366,9 @@ export const regenerateQRToken = async (token) => {
     .from('event_attendances')
     .select('*')
     .eq('qr_token', token)
-    .single()
+    .maybeSingle()
     
-  if (findError) throw new Error('找不到報到記錄')
+  if (findError || !oldAttendance) throw new Error('找不到報到記錄')
   
   // 2. 產生新的 QR Token
   const newQrToken = `${oldAttendance.event_id}-${oldAttendance.user_id}-${Date.now()}`
@@ -382,7 +383,7 @@ export const regenerateQRToken = async (token) => {
       event:events(*),
       user:users(*)
     `)
-    .single()
+    .maybeSingle()
     
   if (updateError) throw updateError
   
@@ -423,7 +424,7 @@ export const checkIn = async (qrCode, eventId) => {
       user:users(*),
       event:events(*)
     `)
-    .single()
+    .maybeSingle()
     
   if (error) throw error
   
