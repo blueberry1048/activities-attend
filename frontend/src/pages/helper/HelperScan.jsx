@@ -22,7 +22,6 @@ export const HelperScan = () => {
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [cameras, setCameras] = useState([])
   const [selectedCameraId, setSelectedCameraId] = useState(null)
-  const [useFrontCamera, setUseFrontCamera] = useState(false)
   
   // 掃描器引用
   const html5QrcodeRef = useRef(null)
@@ -347,29 +346,23 @@ export const HelperScan = () => {
           
           {/* 掃描時的相機切換按鈕 */}
           {scanning && cameras.length > 1 && (
-            <div className="absolute top-4 right-4 z-10 flex gap-2">
-              <button
-                onClick={async () => {
-                  const newUseFront = !useFrontCamera
-                  setUseFrontCamera(newUseFront)
+            <div className="absolute top-4 right-4 z-10">
+              <select
+                value={selectedCameraId || ''}
+                onChange={async (e) => {
+                  const newCameraId = e.target.value
                   await cleanupScanner()
-                  // 選擇對應的相機
-                  const targetCamera = newUseFront 
-                    ? cameras.find(c => c.label && (c.label.toLowerCase().includes('front') || c.label.toLowerCase().includes('user')))
-                    : cameras.find(c => c.label && (c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('rear')))
-                  
-                  let cameraId = targetCamera?.id || selectedCameraId
-                  if (!cameraId) {
-                    cameraId = newUseFront ? cameras[0].id : cameras[cameras.length - 1].id
-                  }
-                  setSelectedCameraId(cameraId)
-                  setTimeout(() => startScanning(cameraId), 100)
+                  setSelectedCameraId(newCameraId)
+                  setTimeout(() => startScanning(newCameraId), 100)
                 }}
-                className="px-3 py-2 bg-black/50 text-white rounded-lg text-sm backdrop-blur-sm flex items-center gap-1"
+                className="px-3 py-2 bg-black/50 text-white rounded-lg text-sm backdrop-blur-sm"
               >
-                <CameraSwitch className="w-4 h-4" />
-                {useFrontCamera ? '前鏡頭' : '後鏡頭'}
-              </button>
+                {cameras.map((camera) => (
+                  <option key={camera.id} value={camera.id}>
+                    {camera.label || `相機 ${cameras.indexOf(camera) + 1}`}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
           
@@ -472,6 +465,43 @@ export const HelperScan = () => {
         }
         .animate-scan {
           animation: scan 2s ease-in-out infinite;
+        }
+        /* 隱藏 html5-qrcode 預設 UI */
+        #qr-reader {
+          background: transparent !important;
+          border: none !important;
+        }
+        #qr-reader__dashboard {
+          display: none !important;
+        }
+        #qr-reader__dashboard_section {
+          display: none !important;
+        }
+        #qr-reader__dashboard_section_csr span, 
+        #qr-reader__dashboard_section_swapiumgaia_native_origin_extension_install,
+        #qr-reader__dashboard_section_reader__select_native,
+        #qr-reader__dashboard_section_reader__select_native_multiple,
+        #qr-reader__dashboard_section_reference {
+          display: none !important;
+        }
+        #qr-reader__scan_region {
+          background: transparent !important;
+        }
+        #qr-reader__scan_region video {
+          object-fit: cover !important;
+          width: 100% !important;
+          height: 100% !important;
+        }
+        #qr-reader__dashboard_wrapper {
+          display: none !important;
+        }
+        #qr-reader__dashboard_csr span,
+        #qr-reader__dashboard_section_swapiumgaia_native_origin_extension_install,
+        #qr-reader__status_span,
+        #qr-reader__header_message,
+        #qr-reader__footer,
+        #qr-reader__footer__toolbar {
+          display: none !important;
         }
       `}</style>
     </div>
