@@ -163,7 +163,7 @@ export const ParticipantManagement = () => {
       setParticipants([...participants, ...formattedResults])
       setBulkInput('')
       setShowBulkForm(false)
-      setSuccess(`已成功建立 ${result.length} 位參加者的 QR Code`)
+      setSuccess(`已成功建立 ${results.length} 位參加者的 QR Code`)
     } catch (err) {
       console.error('批量建立失敗:', err)
       setError(err.message || '批量建立失敗，請稍後再試')
