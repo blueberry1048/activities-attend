@@ -22,6 +22,7 @@ export const HelperScan = () => {
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [cameras, setCameras] = useState([])
   const [selectedCameraId, setSelectedCameraId] = useState(null)
+  const [useFrontCamera, setUseFrontCamera] = useState(false)
   
   // 掃描器引用
   const html5QrcodeRef = useRef(null)
@@ -346,23 +347,29 @@ export const HelperScan = () => {
           
           {/* 掃描時的相機切換按鈕 */}
           {scanning && cameras.length > 1 && (
-            <div className="absolute top-4 right-4 z-10">
-              <select
-                value={selectedCameraId || ''}
-                onChange={async (e) => {
-                  const newCameraId = e.target.value
+            <div className="absolute top-4 right-4 z-10 flex gap-2">
+              <button
+                onClick={async () => {
+                  const newUseFront = !useFrontCamera
+                  setUseFrontCamera(newUseFront)
                   await cleanupScanner()
-                  setSelectedCameraId(newCameraId)
-                  setTimeout(() => startScanning(newCameraId), 100)
+                  // 選擇對應的相機
+                  const targetCamera = newUseFront 
+                    ? cameras.find(c => c.label && (c.label.toLowerCase().includes('front') || c.label.toLowerCase().includes('user')))
+                    : cameras.find(c => c.label && (c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('rear')))
+                  
+                  let cameraId = targetCamera?.id || selectedCameraId
+                  if (!cameraId) {
+                    cameraId = newUseFront ? cameras[0].id : cameras[cameras.length - 1].id
+                  }
+                  setSelectedCameraId(cameraId)
+                  setTimeout(() => startScanning(cameraId), 100)
                 }}
-                className="px-3 py-2 bg-black/50 text-white rounded-lg text-sm backdrop-blur-sm"
+                className="px-3 py-2 bg-black/50 text-white rounded-lg text-sm backdrop-blur-sm flex items-center gap-1"
               >
-                {cameras.map((camera) => (
-                  <option key={camera.id} value={camera.id}>
-                    {camera.label || `相機 ${cameras.indexOf(camera) + 1}`}
-                  </option>
-                ))}
-              </select>
+                <CameraSwitch className="w-4 h-4" />
+                {useFrontCamera ? '前鏡頭' : '後鏡頭'}
+              </button>
             </div>
           )}
           
