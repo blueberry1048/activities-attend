@@ -57,15 +57,18 @@ export const ParticipantView = () => {
   // ----------------------------------------
   const refreshToken = useCallback(async (shouldRegenerate = false) => {
     try {
+      // 使用 currentToken 而非 token，因為 token 是 URL 參數不會自動更新
+      const activeToken = shouldRegenerate ? currentToken : currentToken
+      
       let attendance
       
       if (shouldRegenerate) {
         setIsRefreshing(true)
         // 產生新的 QR Token
-        attendance = await regenerateQRToken(token)
+        attendance = await regenerateQRToken(activeToken)
       } else {
         // 只驗證現有 Token
-        attendance = await verifyParticipantToken(token)
+        attendance = await verifyParticipantToken(activeToken)
       }
       
       const result = {
@@ -94,7 +97,7 @@ export const ParticipantView = () => {
     } finally {
       setIsRefreshing(false)
     }
-  }, [token])
+  }, [currentToken])
   
   // ----------------------------------------
   // Supabase 即時訂閱 - 監聽報到狀態變化
@@ -124,17 +127,6 @@ export const ParticipantView = () => {
       supabase.removeChannel(channel)
     }
   }, [currentToken, refreshToken])
-  
-  // 自動刷新檢查報到狀態 (每10秒)
-  useEffect(() => {
-    if (!data) return
-    
-    const statusTimer = setInterval(() => {
-      refreshToken()
-    }, 10000)
-    
-    return () => clearInterval(statusTimer)
-  }, [data, refreshToken])
   
   // 倒數計時器
   useEffect(() => {
