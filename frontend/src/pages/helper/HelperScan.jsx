@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Html5Qrcode } from 'html5-qrcode'
-import { ArrowLeft, Camera, CheckCircle, XCircle, RefreshCw, Volume2, VolumeX } from 'lucide-react'
+import { ArrowLeft, Camera, CheckCircle, XCircle, RefreshCw, Volume2, VolumeX, CameraSwitch } from 'lucide-react'
 import { getEvent, checkIn } from '../../api/supabase'
 import HelperNavBar from '../../components/HelperNavBar'
 
@@ -20,9 +20,36 @@ export const HelperScan = () => {
   const [cameraError, setCameraError] = useState(null)
   const [stats, setStats] = useState({ total: 0, checkedIn: 0 })
   const [soundEnabled, setSoundEnabled] = useState(true)
+  const [cameras, setCameras] = useState([])
+  const [selectedCameraId, setSelectedCameraId] = useState(null)
   
   // 掃描器引用
   const html5QrcodeRef = useRef(null)
+
+  // ----------------------------------------
+  // 載入可用相機
+  // ----------------------------------------
+  useEffect(() => {
+    const loadCameras = async () => {
+      try {
+        const devices = await Html5Qrcode.getCameras()
+        if (devices && devices.length > 0) {
+          setCameras(devices)
+          // 預設選擇後鏡頭
+          const backCamera = devices.find(c => 
+            c.label && (
+              c.label.toLowerCase().includes('back') || 
+              c.label.toLowerCase().includes('rear')
+            )
+          )
+          setSelectedCameraId(backCamera ? backCamera.id : devices[devices.length - 1].id)
+        }
+      } catch (err) {
+        console.error('載入相機失敗:', err)
+      }
+    }
+    loadCameras()
+  }, [])
 
   // ----------------------------------------
   // 載入活動資訊
@@ -57,7 +84,7 @@ export const HelperScan = () => {
   // ----------------------------------------
   // 開始掃描
   // ----------------------------------------
-  const startScanning = async () => {
+  const startScanning = async (cameraId = null) => {
     setCameraError(null)
     setScanning(true)
     
@@ -72,30 +99,26 @@ export const HelperScan = () => {
       
       html5QrcodeRef.current = new Html5Qrcode("qr-reader")
       
-      // 優先使用後鏡頭
-      let cameraId = devices[0].id
+      // 使用指定的相機或已選擇的相機
+      let selectedId = cameraId || selectedCameraId
       
-      // 嘗試找後鏡頭
-      const backCamera = devices.find(c => 
-        c.label && (
-          c.label.toLowerCase().includes('back') || 
-          c.label.toLowerCase().includes('rear')
+      // 如果沒有選擇相機，預設後鏡頭
+      if (!selectedId) {
+        const backCamera = devices.find(c => 
+          c.label && (
+            c.label.toLowerCase().includes('back') || 
+            c.label.toLowerCase().includes('rear')
+          )
         )
-      )
-      
-      if (backCamera) {
-        cameraId = backCamera.id
-      } else if (devices.length > 1) {
-        // 沒找到後鏡頭，嘗試用最後一個（通常是後鏡頭）
-        cameraId = devices[devices.length - 1].id
+        selectedId = backCamera ? backCamera.id : devices[devices.length - 1].id
+        setSelectedCameraId(selectedId)
       }
       
       await html5QrcodeRef.current.start(
-        cameraId,
+        selectedId,
         {
           fps: 10,
-          qrbox: { width: 280, height: 280 },
-          facingMode: { ideal: "environment" }
+          qrbox: { width: 280, height: 280 }
         },
         (decodedText) => {
           handleScanSuccess(decodedText)
@@ -321,6 +344,28 @@ export const HelperScan = () => {
         <div className="flex-1 relative">
           <div id="qr-reader" className="absolute inset-0"></div>
           
+          {/* 掃描時的相機切換按鈕 */}
+          {scanning && cameras.length > 1 && (
+            <div className="absolute top-4 right-4 z-10">
+              <select
+                value={selectedCameraId || ''}
+                onChange={async (e) => {
+                  const newCameraId = e.target.value
+                  await cleanupScanner()
+                  setSelectedCameraId(newCameraId)
+                  setTimeout(() => startScanning(newCameraId), 100)
+                }}
+                className="px-3 py-2 bg-black/50 text-white rounded-lg text-sm backdrop-blur-sm"
+              >
+                {cameras.map((camera) => (
+                  <option key={camera.id} value={camera.id}>
+                    {camera.label || `相機 ${cameras.indexOf(camera) + 1}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          
           {/* 掃描框裝飾 */}
           {scanning && (
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
@@ -363,8 +408,27 @@ export const HelperScan = () => {
                 <Camera className="h-20 w-20 mx-auto mb-4 text-gray-500" />
                 <p className="text-lg font-medium mb-2">準備掃描</p>
                 <p className="text-gray-400 text-sm mb-6">點擊下方按鈕開啟相機</p>
+                
+                {/* 相機選擇 */}
+                {cameras.length > 1 && (
+                  <div className="mb-6">
+                    <label className="text-sm text-gray-400 block mb-2">選擇相機</label>
+                    <select
+                      value={selectedCameraId || ''}
+                      onChange={(e) => setSelectedCameraId(e.target.value)}
+                      className="px-4 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 w-full max-w-xs"
+                    >
+                      {cameras.map((camera) => (
+                        <option key={camera.id} value={camera.id}>
+                          {camera.label || `相機 ${cameras.indexOf(camera) + 1}`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
                 <button
-                  onClick={startScanning}
+                  onClick={() => startScanning()}
                   className="px-8 py-4 bg-primary-600 text-white rounded-full font-semibold text-lg shadow-lg active:scale-95 transition-transform"
                 >
                   開始掃描
