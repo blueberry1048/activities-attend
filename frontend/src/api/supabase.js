@@ -423,30 +423,26 @@ export const checkIn = async (qrCode, eventId) => {
     throw new Error('此參加者已經報到了')
   }
   
-  // 2. 更新報到狀態
-  // 先取得 ID，然後用 ID 更新，這樣更精確
-  const { data: attendanceToUpdate, error: fetchError } = await supabase
-    .from('event_attendances')
-    .select('id')
-    .eq('qr_token', qrCode)
-    .limit(1)
-    .maybeSingle()
-    
-  if (fetchError) throw fetchError
-  if (!attendanceToUpdate) throw new Error('找不到報到記錄')
-  
-  const { data, error } = await supabase
+  // 2. 更新報到狀態 - 先更新不回傳，然後再查詢結果
+  const { error: updateError } = await supabase
     .from('event_attendances')
     .update({
       is_checked_in: true,
       checked_in_at: new Date().toISOString()
     })
-    .eq('id', attendanceToUpdate.id)
+    .eq('qr_token', qrCode)
+    
+  if (updateError) throw updateError
+  
+  // 然後查詢更新後的記錄
+  const { data, error } = await supabase
+    .from('event_attendances')
     .select(`
       *,
       user:users(*),
       event:events(*)
     `)
+    .eq('qr_token', qrCode)
     .maybeSingle()
 
   // 調試日誌
