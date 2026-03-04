@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Html5Qrcode } from 'html5-qrcode'
-import { ArrowLeft, Camera, CheckCircle, XCircle, RefreshCw, Volume2, VolumeX, CameraSwitch } from 'lucide-react'
+import { ArrowLeft, Camera, CheckCircle, XCircle, RefreshCw, Volume2, VolumeX } from 'lucide-react'
 import { getEvent, checkIn } from '../../api/supabase'
 import HelperNavBar from '../../components/HelperNavBar'
 
