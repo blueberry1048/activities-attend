@@ -4,7 +4,7 @@
 // 透過連結訪問，顯示活動資訊與 QR Code
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Calendar, MapPin, Clock, CheckCircle, AlertCircle, RefreshCw, QrCode, Copy, ExternalLink, Sparkles } from 'lucide-react'
+import { Calendar, MapPin, Clock, CheckCircle, AlertCircle, RefreshCw, QrCode, Copy, ExternalLink, Sparkles, Download } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { verifyParticipantToken, regenerateQRToken } from '../api/supabase'
 import { supabase } from '../lib/supabase'
@@ -19,6 +19,40 @@ export const ParticipantView = () => {
   const [countdown, setCountdown] = useState(60)
   const [currentToken, setCurrentToken] = useState(token) // 追蹤當前 Token (用於動態 QR Code)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  
+  // PWA 安裝狀態
+  const [deferredPrompt, setDeferredPrompt] = useState(null)
+  const [showInstallButton, setShowInstallButton] = useState(false)
+  
+  // ----------------------------------------
+  // PWA: 監聽安裝提示
+  // ----------------------------------------
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+      setShowInstallButton(true)
+    }
+    
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    }
+  }, [])
+  
+  // ----------------------------------------
+  // 處理 PWA 安裝
+  // ----------------------------------------
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) return
+    
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    
+    setDeferredPrompt(null)
+    setShowInstallButton(false)
+  }
   
   // ----------------------------------------
   // 驗證 Token 並取得活動資訊
@@ -263,6 +297,19 @@ export const ParticipantView = () => {
             <div className="inline-flex items-center px-6 py-3 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100">
               <p className="text-gray-600 font-medium">請出示 QR Code 進行報到</p>
             </div>
+            
+            {/* PWA 安裝按鈕 */}
+            {showInstallButton && (
+              <div className="mt-4">
+                <button
+                  onClick={handleInstallPWA}
+                  className="inline-flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200 text-sm font-medium text-gray-700 hover:bg-white transition-colors"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  加入主畫面
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

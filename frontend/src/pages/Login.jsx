@@ -4,11 +4,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { User, Lock, LogIn } from 'lucide-react'
+import { User, Lock, LogIn, Download } from 'lucide-react'
 
 export const Login = () => {
   const navigate = useNavigate()
-  const { login, isAdmin, isAuthenticated, loading } = useAuth()
+  const { login, isAdmin, isHelper, isAuthenticated, loading } = useAuth()
+  
+  // PWA 安裝狀態
+  const [deferredPrompt, setDeferredPrompt] = useState(null)
+  const [showInstallButton, setShowInstallButton] = useState(false)
   
   // 表單狀態
   const [username, setUsername] = useState('')
@@ -17,17 +21,56 @@ export const Login = () => {
   const [errorMessage, setErrorMessage] = useState('')
   
   // ----------------------------------------
+  // PWA: 監聽安裝提示
+  // ----------------------------------------
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      // 阻止自動顯示瀏覽器的安裝提示
+      e.preventDefault()
+      // 儲存事件以便後續觸發
+      setDeferredPrompt(e)
+      // 顯示自訂安裝按鈕
+      setShowInstallButton(true)
+    }
+    
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    }
+  }, [])
+  
+  // ----------------------------------------
+  // 處理 PWA 安裝
+  // ----------------------------------------
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) return
+    
+    // 顯示安裝提示
+    deferredPrompt.prompt()
+    
+    // 等待用戶回應
+    const { outcome } = await deferredPrompt.userChoice
+    
+    // 隱藏按鈕（無論用戶是否安裝）
+    setDeferredPrompt(null)
+    setShowInstallButton(false)
+  }
+  
+  // ----------------------------------------
   // 初始化：如果已登入，導向首頁
   // ----------------------------------------
   useEffect(() => {
     if (!loading && isAuthenticated) {
       if (isAdmin) {
         navigate('/admin', { replace: true })
+      } else if (isHelper) {
+        navigate('/helper/events', { replace: true })
       } else {
         navigate('/', { replace: true })
       }
     }
-  }, [isAuthenticated, loading, isAdmin, navigate])
+  }, [isAuthenticated, loading, isAdmin, isHelper, navigate])
   
   // 如果已登入且正在載入中，不顯示表單
   if (!loading && isAuthenticated) {
@@ -48,6 +91,8 @@ export const Login = () => {
       // 根據權限導向不同頁面
       if (user.is_admin) {
         navigate('/admin')
+      } else if (user.is_helper) {
+        navigate('/helper/events')
       } else {
         navigate('/')
       }
@@ -148,6 +193,22 @@ export const Login = () => {
         <div className="mt-6 text-center text-sm text-gray-500">
           <p>如需註冊帳號，請聯繫系統管理員</p>
         </div>
+        
+        {/* PWA 安裝按鈕 */}
+        {showInstallButton && (
+          <div className="mt-4">
+            <button
+              onClick={handleInstallPWA}
+              className="w-full flex justify-center items-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+            >
+              <Download className="mr-2 h-5 w-5" />
+              加入主畫面
+            </button>
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              將應用程式加入手機主畫面，方便快速開啟
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

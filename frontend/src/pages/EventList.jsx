@@ -17,6 +17,15 @@ export const EventList = () => {
   const navigate = useNavigate()
   
   // ----------------------------------------
+  // Helper 用戶重導向到手機版
+  // ----------------------------------------
+  useEffect(() => {
+    if (isHelper) {
+      navigate('/helper/events', { replace: true })
+    }
+  }, [isHelper, navigate])
+  
+  // ----------------------------------------
   // 載入活動列表
   // ----------------------------------------
   useEffect(() => {

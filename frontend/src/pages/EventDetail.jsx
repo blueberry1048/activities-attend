@@ -2,7 +2,7 @@
 // 活動詳情頁面
 // ============================================================
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { Calendar, MapPin, Clock, QrCode } from 'lucide-react'
 import { getEvent } from '../api/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -10,7 +10,17 @@ import { useAuth } from '../contexts/AuthContext'
 export const EventDetail = () => {
   const { id: eventId } = useParams()
   const { isHelper } = useAuth()
-
+  const navigate = useNavigate()
+  
+  // ----------------------------------------
+  // Helper 用戶重導向到手機版
+  // ----------------------------------------
+  useEffect(() => {
+    if (isHelper) {
+      navigate('/helper/events', { replace: true })
+    }
+  }, [isHelper, navigate])
+  
   // 狀態
   const [event, setEvent] = useState(null)
   const [loading, setLoading] = useState(true)

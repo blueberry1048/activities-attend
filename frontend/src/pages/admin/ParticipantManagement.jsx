@@ -2,9 +2,9 @@
 // 參加者管理頁面 (管理員)
 // ============================================================
 // 管理活動的參加者名單與 QR Code
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Plus, Users, Download, Mail, Trash2, Copy, QrCode, RefreshCw, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Plus, Users, Download, Mail, Trash2, Copy, QrCode, RefreshCw, ExternalLink, Upload, Globe, Trash } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { getEvent, createParticipant, createParticipantsBulk, getParticipants, deleteParticipant } from '../../api/supabase'
 
@@ -22,10 +22,13 @@ export const ParticipantManagement = () => {
   // 表單狀態
   const [showForm, setShowForm] = useState(false)
   const [showBulkForm, setShowBulkForm] = useState(false)
+  const [showCsvForm, setShowCsvForm] = useState(false)
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false)
   const [participantName, setParticipantName] = useState('')
   const [participantEmail, setParticipantEmail] = useState('')
   const [participantPhone, setParticipantPhone] = useState('')
   const [bulkInput, setBulkInput] = useState('')
+  const fileInputRef = useRef(null)
   
   // QR Code 顯示
   const [selectedQR, setSelectedQR] = useState(null)
@@ -173,6 +176,119 @@ export const ParticipantManagement = () => {
   }
   
   // ----------------------------------------
+  // 解析 CSV 檔案
+  // ----------------------------------------
+  const parseCSV = (text) => {
+    const lines = text.split(/\r?\n/).filter(line => line.trim())
+    const participants = []
+    
+    // 跳過標題行
+    for (let i = 1; i < lines.length; i++) {
+      // 處理 CSV（支援逗號或分號分隔）
+      const line = lines[i].trim()
+      if (!line) continue
+      
+      // 簡單的 CSV 解析（處理引號內的逗號）
+      const parts = []
+      let current = ''
+      let inQuotes = false
+      
+      for (const char of line) {
+        if (char === '"') {
+          inQuotes = !inQuotes
+        } else if ((char === ',' || char === ';') && !inQuotes) {
+          parts.push(current.trim())
+          current = ''
+        } else {
+          current += char
+        }
+      }
+      parts.push(current.trim())
+      
+      // name 是第一欄（必填），email 是第二欄（選填）
+      const name = parts[0]?.replace(/^"|"$/g, '')
+      const email = parts[1]?.replace(/^"|"$/g, '').replace(/^'|'$/g, '')
+      
+      if (name && name.trim()) {
+        participants.push({
+          full_name: name.trim(),
+          email: email && email.trim() ? email.trim() : `${Date.now()}-${i}@placeholder.com`
+        })
+      }
+    }
+    
+    return participants
+  }
+  
+  // ----------------------------------------
+  // 匯入 CSV
+  // ----------------------------------------
+  const handleCsvImport = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    // 驗證檔案類型
+    if (!file.name.endsWith('.csv')) {
+      setError('請上傳 CSV 檔案')
+      return
+    }
+    
+    try {
+      const text = await file.text()
+      const participantsData = parseCSV(text)
+      
+      if (participantsData.length === 0) {
+        setError('CSV 檔案中沒有有效的參加者資料')
+        return
+      }
+      
+      if (participantsData.length > 100) {
+        setError('每次最多匯入 100 位參加者')
+        return
+      }
+      
+      setSaving(true)
+      setError(null)
+      setSuccess(null)
+      
+      const results = await createParticipantsBulk(eventId, participantsData)
+      
+      // 轉換結果格式
+      const formattedResults = results.map(r => ({
+        id: r.attendance.id,
+        user_id: r.user.id,
+        name: r.user.full_name,
+        email: r.user.email,
+        qr_code: r.qr_token,
+        is_checked_in: false
+      }))
+      
+      setParticipants([...participants, ...formattedResults])
+      setShowCsvForm(false)
+      setSuccess(`已成功匯入 ${results.length} 位參加者`)
+    } catch (err) {
+      console.error('CSV 匯入失敗:', err)
+      setError(err.message || '匯入失敗，請檢查 CSV 格式')
+    } finally {
+      setSaving(false)
+      // 清空檔案輸入
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+  
+  // ----------------------------------------
+  // 下載 CSV 範本
+  // ----------------------------------------
+  const downloadCsvTemplate = () => {
+    const link = document.createElement('a')
+    link.href = '/participants_template.csv'
+    link.download = 'participants_template.csv'
+    link.click()
+  }
+  
+  // ----------------------------------------
   // 刪除參加者
   // ----------------------------------------
   const handleDeleteParticipant = async (attendanceId, participantName) => {
@@ -219,6 +335,78 @@ export const ParticipantManagement = () => {
     }
     
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)))
+  }
+  
+  // ----------------------------------------
+  // 下載全部連結
+  // ----------------------------------------
+  const downloadAllLinks = (format = 'txt') => {
+    const baseUrl = window.location.origin
+    const links = participants.map(p => ({
+      name: p.name,
+      email: p.email,
+      link: `${baseUrl}/participants/${p.qr_code}`
+    }))
+    
+    let content, mimeType, extension
+    
+    // UTF-8 BOM for proper Chinese character encoding
+    const BOM = '\uFEFF'
+    
+    if (format === 'csv') {
+      // CSV 格式
+      const header = '姓名,電郵,連結\n'
+      const rows = links.map(l => `${l.name},${l.email || ''},${l.link}`).join('\n')
+      content = BOM + header + rows
+      mimeType = 'text/csv;charset=utf-8;'
+      extension = 'csv'
+    } else {
+      // TXT 格式 (Tab 分隔)
+      const header = '姓名\t電郵\t連結\n'
+      const rows = links.map(l => `${l.name}\t${l.email || ''}\t${l.link}`).join('\n')
+      content = BOM + header + rows
+      mimeType = 'text/plain;charset=utf-8;'
+      extension = 'txt'
+    }
+    
+    const blob = new Blob([content], { type: mimeType })
+    
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `${event?.name || '活動'}_參加者連結.${extension}`
+    link.click()
+    setShowDownloadMenu(false)
+  }
+  
+  // ----------------------------------------
+  // 刪除全部參加者
+  // ----------------------------------------
+  const handleDeleteAllParticipants = async () => {
+    if (!window.confirm(`確定要刪除全部 ${participants.length} 位參加者嗎？此操作無法復原。`)) {
+      return
+    }
+    
+    if (!window.confirm('這將會刪除所有參加者及其 QR Code，確定要繼續嗎？')) {
+      return
+    }
+    
+    setSaving(true)
+    setError(null)
+    setSuccess(null)
+    
+    try {
+      // 逐一刪除
+      for (const p of participants) {
+        await deleteParticipant(p.id)
+      }
+      setParticipants([])
+      setSuccess('已刪除全部參加者')
+    } catch (err) {
+      console.error('刪除失敗:', err)
+      setError(err.message || '刪除失敗，請稍後再試')
+    } finally {
+      setSaving(false)
+    }
   }
   
   // ----------------------------------------
@@ -330,17 +518,61 @@ export const ParticipantManagement = () => {
           批量新增
         </button>
         
+        <button
+          onClick={() => setShowCsvForm(!showCsvForm)}
+          className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          匯入 CSV
+        </button>
+        
         {participants.length > 0 && (
-          <button
-            onClick={() => {
-              // 下載所有參加者的 QR Code
-              participants.forEach(p => downloadQRCode(p))
-            }}
-            className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            下載全部 QR Code
-          </button>
+          <>
+            <div className="relative">
+              <button
+                onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              >
+                <Globe className="h-4 w-4 mr-2" />
+                下載全部連結
+              </button>
+              {showDownloadMenu && (
+                <div className="absolute left-0 mt-2 w-32 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                  <button
+                    onClick={() => { downloadAllLinks('txt'); setShowDownloadMenu(false) }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-lg"
+                  >
+                    TXT 格式
+                  </button>
+                  <button
+                    onClick={() => { downloadAllLinks('csv'); setShowDownloadMenu(false) }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-b-lg"
+                  >
+                    CSV 格式
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            <button
+              onClick={() => {
+                participants.forEach(p => downloadQRCode(p))
+              }}
+              className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              下載全部 QR Code
+            </button>
+            
+            <button
+              onClick={handleDeleteAllParticipants}
+              disabled={saving}
+              className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-300"
+            >
+              <Trash className="h-4 w-4 mr-2" />
+              刪除全部
+            </button>
+          </>
         )}
       </div>
       
@@ -440,6 +672,60 @@ export const ParticipantManagement = () => {
               </button>
             </div>
           </form>
+        </div>
+      )}
+      
+      {/* CSV 匯入表單 */}
+      {showCsvForm && (
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <h3 className="text-lg font-semibold mb-4">匯入 CSV 檔案</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            CSV 檔案需包含 name（姓名，必填）和 email（電郵，選填）兩欄
+          </p>
+          
+          <div className="mb-4">
+            <button
+              onClick={downloadCsvTemplate}
+              className="text-primary-600 hover:underline text-sm"
+            >
+              下載 CSV 範本
+            </button>
+          </div>
+          
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept=".csv"
+              onChange={handleCsvImport}
+              className="hidden"
+              id="csv-upload"
+            />
+            <label
+              htmlFor="csv-upload"
+              className="cursor-pointer"
+            >
+              <Upload className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+              <p className="text-gray-600 mb-2">點擊選擇 CSV 檔案或拖放到此處</p>
+              <p className="text-sm text-gray-400">支援 .csv 格式</p>
+            </label>
+          </div>
+          
+          {saving && (
+            <div className="mt-4 text-center text-gray-600">
+              匯入中...
+            </div>
+          )}
+          
+          <div className="mt-4 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setShowCsvForm(false)}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              關閉
+            </button>
+          </div>
         </div>
       )}
       

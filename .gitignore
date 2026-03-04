@@ -1,11 +1,6 @@
 # 忽略 node_modules
 node_modules/
 
-# 忽略 Python 快取
-__pycache__/
-*.pyc
-*.pyo
-
 # 忽略本地資料庫
 *.db
 *.sqlite
