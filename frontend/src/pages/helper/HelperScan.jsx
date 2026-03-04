@@ -467,40 +467,28 @@ export const HelperScan = () => {
           animation: scan 2s ease-in-out infinite;
         }
         /* 隱藏 html5-qrcode 預設 UI */
-        #qr-reader {
-          background: transparent !important;
-          border: none !important;
-        }
-        #qr-reader__dashboard {
+        #qr-reader > div:not(#qr-reader__scan_region) {
           display: none !important;
         }
-        #qr-reader__dashboard_section {
-          display: none !important;
-        }
-        #qr-reader__dashboard_section_csr span, 
-        #qr-reader__dashboard_section_swapiumgaia_native_origin_extension_install,
-        #qr-reader__dashboard_section_reader__select_native,
-        #qr-reader__dashboard_section_reader__select_native_multiple,
-        #qr-reader__dashboard_section_reference {
+        #qr-reader__dashboard,
+        #qr-reader__dashboard_wrapper,
+        #qr-reader__dashboard_section,
+        #qr-reader__footer,
+        #qr-reader__status_span,
+        #qr-reader__header_message {
           display: none !important;
         }
         #qr-reader__scan_region {
-          background: transparent !important;
+          position: absolute !important;
+          inset: 0 !important;
         }
         #qr-reader__scan_region video {
-          object-fit: cover !important;
           width: 100% !important;
           height: 100% !important;
+          object-fit: cover !important;
         }
-        #qr-reader__dashboard_wrapper {
-          display: none !important;
-        }
-        #qr-reader__dashboard_csr span,
-        #qr-reader__dashboard_section_swapiumgaia_native_origin_extension_install,
-        #qr-reader__status_span,
-        #qr-reader__header_message,
-        #qr-reader__footer,
-        #qr-reader__footer__toolbar {
+        #qr-reader__scan_region img,
+        #qr-reader__scan_region canvas {
           display: none !important;
         }
       `}</style>
