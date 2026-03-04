@@ -74,19 +74,28 @@ export const HelperScan = () => {
       
       // 優先使用後鏡頭
       let cameraId = devices[0].id
+      
+      // 嘗試找後鏡頭
       const backCamera = devices.find(c => 
-        c.label.toLowerCase().includes('back') || 
-        c.label.toLowerCase().includes('rear')
+        c.label && (
+          c.label.toLowerCase().includes('back') || 
+          c.label.toLowerCase().includes('rear')
+        )
       )
+      
       if (backCamera) {
         cameraId = backCamera.id
+      } else if (devices.length > 1) {
+        // 沒找到後鏡頭，嘗試用最後一個（通常是後鏡頭）
+        cameraId = devices[devices.length - 1].id
       }
       
       await html5QrcodeRef.current.start(
         cameraId,
         {
           fps: 10,
-          qrbox: { width: 280, height: 280 }
+          qrbox: { width: 280, height: 280 },
+          facingMode: { ideal: "environment" }
         },
         (decodedText) => {
           handleScanSuccess(decodedText)
