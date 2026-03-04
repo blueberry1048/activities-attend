@@ -233,9 +233,6 @@ export const Scanner = () => {
   // 處理掃描成功
   // ----------------------------------------
   const handleScanSuccess = async (qrCode) => {
-    // 調試日誌
-    fetch('http://127.0.0.1:7302/ingest/c55620a9-5040-4f94-b143-a95b8db63ffa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Scanner.jsx:handleScanSuccess',message:'scan success',data:{qrCode,eventId},timestamp:Date.now()})}).catch(()=>{});
-
     // 停止掃描
     await stopScanning()
     
@@ -249,15 +246,9 @@ export const Scanner = () => {
         token = url.pathname.split('/participants/')[1] || qrCode
       }
       
-      // 調試日誌
-      fetch('http://127.0.0.1:7302/ingest/c55620a9-5040-4f94-b143-a95b8db63ffa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Scanner.jsx:handleScanSuccess',message:'before checkIn',data:{token,eventId},timestamp:Date.now()})}).catch(()=>{});
-      
       // 發送報到請求
       const response = await checkIn(token, eventId)
 
-      // 調試日誌
-      fetch('http://127.0.0.1:7302/ingest/c55620a9-5040-4f94-b143-a95b8db63ffa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Scanner.jsx:handleScanSuccess',message:'checkIn response',data:{hasResponse: response ? 'yes' : 'no', hasUser: response?.user ? 'yes' : 'no'},timestamp:Date.now()})}).catch(()=>{});
-      
       setResult({
         success: true,
         message: '報到成功！',
@@ -277,9 +268,6 @@ export const Scanner = () => {
         await startScanning()
       }, 2000)
     } catch (err) {
-      // 調試日誌
-      fetch('http://127.0.0.1:7302/ingest/c55620a9-5040-4f94-b143-a95b8db63ffa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Scanner.jsx:handleScanSuccess',message:'catch error',data:{error: err.message, stack: err.stack},timestamp:Date.now()})}).catch(()=>{});
-
       // 報到失敗
       setResult({
         success: false,

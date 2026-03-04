@@ -338,9 +338,6 @@ export const verifyParticipantToken = async (token) => {
   // Token 格式: eventId-userId-timestamp
   const [eventId] = token.split('-')
   
-  // 調試日誌
-  fetch('http://127.0.0.1:7302/ingest/c55620a9-5040-4f94-b143-a95b8db63ffa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase.js:verifyParticipantToken',message:'query start',data:{token},timestamp:Date.now()})}).catch(()=>{});
-  
   // 1. 查詢報到記錄 - 使用 maybeSingle 避免 PGRST116 錯誤
   const { data: attendance, error } = await supabase
     .from('event_attendances')
@@ -351,9 +348,6 @@ export const verifyParticipantToken = async (token) => {
     `)
     .eq('qr_token', token)
     .maybeSingle()
-    
-  // 調試日誌
-  fetch('http://127.0.0.1:7302/ingest/c55620a9-5040-4f94-b143-a95b8db63ffa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase.js:verifyParticipantToken',message:'query result',data:{hasData: attendance ? 'yes' : 'null', hasError: error ? 'yes' : 'no', errorCode: error?.code},timestamp:Date.now()})}).catch(()=>{});
     
   if (error) throw new Error('無效的 QR Code')
   if (!attendance) throw new Error('找不到此 QR Code 的報到記錄')
@@ -406,15 +400,9 @@ export const regenerateQRToken = async (token) => {
  * @returns {Promise} - 報到結果
  */
 export const checkIn = async (qrCode, eventId) => {
-  // 調試日誌
-  fetch('http://127.0.0.1:7302/ingest/c55620a9-5040-4f94-b143-a95b8db63ffa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase.js:checkIn',message:'checkIn start',data:{qrCode,eventId},timestamp:Date.now()})}).catch(()=>{});
-
   // 1. 驗證 QR Code
   const attendance = await verifyParticipantToken(qrCode)
 
-  // 調試日誌
-  fetch('http://127.0.0.1:7302/ingest/c55620a9-5040-4f94-b143-a95b8db63ffa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase.js:checkIn',message:'attendance result',data:{attendance:attendance ? 'exists' : 'null', hasUser: attendance?.user ? 'yes' : 'no'},timestamp:Date.now()})}).catch(()=>{});
-  
   if (attendance.event_id !== eventId) {
     throw new Error('此 QR Code 不屬於這個活動')
   }
@@ -445,9 +433,6 @@ export const checkIn = async (qrCode, eventId) => {
     .eq('qr_token', qrCode)
     .maybeSingle()
 
-  // 調試日誌
-  fetch('http://127.0.0.1:7302/ingest/c55620a9-5040-4f94-b143-a95b8db63ffa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase.js:checkIn',message:'update result',data:{hasData: data ? 'yes' : 'null', hasError: error ? 'yes' : 'no', errorCode: error?.code},timestamp:Date.now()})}).catch(()=>{});
-    
   if (error) throw error
   if (!data) throw new Error('更新失敗，請重試')
   
