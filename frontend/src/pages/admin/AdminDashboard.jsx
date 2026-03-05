@@ -96,16 +96,26 @@ export const AdminDashboard = () => {
   }
   
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       {/* 頁面標題與新增按鈕 */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 bg-white rounded-2xl shadow-sm p-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">活動管理</h1>
-          <p className="text-gray-600 mt-2">管理所有活動與報到</p>
+          <p className="text-gray-600 mt-1">管理所有活動與報到</p>
+          <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
+            <span className="flex items-center">
+              <Calendar className="h-4 w-4 mr-1" />
+              總活動：{events.length}
+            </span>
+            <span className="flex items-center">
+              <Users className="h-4 w-4 mr-1" />
+              總參加者：{events.reduce((sum, e) => sum + (e.attendee_count || 0), 0)}
+            </span>
+          </div>
         </div>
         <Link
           to="/admin/events/new"
-          className="mt-4 md:mt-0 inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          className="mt-4 lg:mt-0 inline-flex items-center px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors shadow-lg hover:shadow-xl"
         >
           <Plus className="h-5 w-5 mr-2" />
           新建活動
@@ -114,28 +124,135 @@ export const AdminDashboard = () => {
       
       {/* 活動列表 */}
       {events.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl shadow-sm">
-          <Calendar className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-4 text-lg font-medium text-gray-900">尚無活動</h3>
+        <div className="text-center py-20 bg-white rounded-2xl shadow-sm">
+          <Calendar className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+          <h3 className="text-xl font-medium text-gray-900">尚無活動</h3>
           <p className="mt-2 text-gray-500">點擊上方按鈕建立第一個活動</p>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {events.map((event) => (
-            <div
-              key={event.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
-            >
-              <div className="p-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                  {/* 活動資訊 */}
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          {/* 桌面版表格 */}
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">活動名稱</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">日期時間</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">地點</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">狀態</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">報到</th>
+                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {events.map((event) => (
+                  <tr key={event.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="bg-primary-100 rounded-lg p-2 mr-3">
+                          <Calendar className="h-5 w-5 text-primary-600" />
+                        </div>
+                        <span className="text-lg font-semibold text-gray-900">{event.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900 font-medium">{formatDate(event.event_date)}</div>
+                      {event.start_time && (
+                        <div className="text-sm text-gray-500 flex items-center mt-1">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {formatTime(event.start_time)}
+                          {event.end_time && ` - ${formatTime(event.end_time)}`}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {event.location ? (
+                        <div className="flex items-center text-sm text-gray-600">
+                          <MapPin className="h-4 w-4 mr-1 text-gray-400" />
+                          {event.location}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                        event.is_active
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        <span className={`w-2 h-2 rounded-full mr-2 ${event.is_active ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                        {event.is_active ? '啟用' : '停用'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="flex-1 bg-gray-100 rounded-full h-2 mr-3 max-w-[100px]">
+                          <div 
+                            className="bg-primary-500 h-2 rounded-full"
+                            style={{ width: `${event.attendee_count > 0 ? ((event.checked_in_count || 0) / event.attendee_count) * 100 : 0}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">
+                          {event.checked_in_count || 0}/{event.attendee_count || 0}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end space-x-2">
+                        <Link
+                          to={`/admin/participants/${event.id}`}
+                          className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                          title="參加者管理"
+                        >
+                          <UserPlus className="h-4 w-4 mr-1" />
+                          <span className="hidden xl:inline">參加者管理</span>
+                        </Link>
+                        
+                        <Link
+                          to={`/admin/scan/${event.id}`}
+                          className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+                          title="掃描報到"
+                        >
+                          <QrCode className="h-4 w-4 mr-1" />
+                          <span className="hidden xl:inline">掃描報到</span>
+                        </Link>
+                        
+                        <Link
+                          to={`/admin/events/${event.id}/edit`}
+                          className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors"
+                          title="編輯"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Link>
+                        
+                        <button
+                          onClick={() => handleDelete(event.id, event.name)}
+                          disabled={deletingId === event.id}
+                          className="inline-flex items-center px-3 py-2 bg-red-50 text-red-600 text-sm rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+                          title="刪除"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* 手機版卡片 */}
+          <div className="lg:hidden divide-y divide-gray-100">
+            {events.map((event) => (
+              <div key={event.id} className="p-4">
+                <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center">
-                      <h2 className="text-xl font-semibold text-gray-900">
+                      <h2 className="text-lg font-semibold text-gray-900">
                         {event.name}
                       </h2>
-                      {/* 狀態標籤 */}
-                      <span className={`ml-3 px-2 py-1 text-xs font-medium rounded-full ${
+                      <span className={`ml-2 px-2 py-0.5 text-xs font-medium rounded-full ${
                         event.is_active
                           ? 'bg-green-100 text-green-700'
                           : 'bg-gray-100 text-gray-700'
@@ -144,87 +261,68 @@ export const AdminDashboard = () => {
                       </span>
                     </div>
                     
-                    <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                      {/* 日期 */}
-                      <div className="flex items-center text-gray-600">
-                        <Calendar className="h-4 w-4 mr-2 text-primary-500" />
-                        <span>{formatDate(event.event_date)}</span>
-                      </div>
-                      
-                      {/* 時間 */}
+                    <div className="mt-2 flex flex-wrap gap-3 text-sm text-gray-600">
+                      <span className="flex items-center">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {formatDate(event.event_date)}
+                      </span>
                       {event.start_time && (
-                        <div className="flex items-center text-gray-600">
-                          <Clock className="h-4 w-4 mr-2 text-primary-500" />
-                          <span>{formatTime(event.start_time)}</span>
-                        </div>
+                        <span className="flex items-center">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {formatTime(event.start_time)}
+                        </span>
                       )}
-                      
-                      {/* 地點 */}
                       {event.location && (
-                        <div className="flex items-center text-gray-600">
-                          <MapPin className="h-4 w-4 mr-2 text-primary-500" />
-                          <span>{event.location}</span>
-                        </div>
+                        <span className="flex items-center">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          {event.location}
+                        </span>
                       )}
                     </div>
                     
-                    {/* 報到統計 */}
-                    <div className="mt-3 flex items-center text-sm">
-                      <Users className="h-4 w-4 mr-2 text-gray-400" />
+                    <div className="mt-2 flex items-center text-sm">
+                      <Users className="h-3 w-3 mr-1 text-gray-400" />
                       <span className="text-gray-600">
-                        報到人數：
-                        <span className="font-semibold text-primary-600">
-                          {event.checked_in_count || 0}
-                        </span>
+                        <span className="font-semibold text-primary-600">{event.checked_in_count || 0}</span>
                         {' / '}
                         <span className="font-semibold">{event.attendee_count || 0}</span>
                       </span>
                     </div>
                   </div>
-                  
-                  {/* 操作按鈕 */}
-                  <div className="mt-4 md:mt-0 md:ml-6 flex items-center space-x-3">
-                    {/* 參加者管理按鈕 */}
-                    <Link
-                      to={`/admin/participants/${event.id}`}
-                      className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      <UserPlus className="h-4 w-4 mr-1" />
-                      參加者管理
-                    </Link>
-                    
-                    {/* 掃描按鈕 */}
-                    <Link
-                      to={`/admin/scan/${event.id}`}
-                      className="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      <QrCode className="h-4 w-4 mr-1" />
-                      掃描報到
-                    </Link>
-                    
-                    {/* 編輯按鈕 */}
-                    <Link
-                      to={`/admin/events/${event.id}/edit`}
-                      className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors"
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      編輯
-                    </Link>
-                    
-                    {/* 刪除按鈕 */}
-                    <button
-                      onClick={() => handleDelete(event.id, event.name)}
-                      disabled={deletingId === event.id}
-                      className="inline-flex items-center px-3 py-2 bg-red-50 text-red-600 text-sm rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      {deletingId === event.id ? '刪除中...' : '刪除'}
-                    </button>
-                  </div>
+                </div>
+                
+                <div className="mt-3 flex items-center space-x-2 flex-wrap">
+                  <Link
+                    to={`/admin/participants/${event.id}`}
+                    className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg"
+                  >
+                    <UserPlus className="h-3 w-3 mr-1" />
+                    參加者
+                  </Link>
+                  <Link
+                    to={`/admin/scan/${event.id}`}
+                    className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg"
+                  >
+                    <QrCode className="h-3 w-3 mr-1" />
+                    掃描
+                  </Link>
+                  <Link
+                    to={`/admin/events/${event.id}/edit`}
+                    className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded-lg"
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(event.id, event.name)}
+                    disabled={deletingId === event.id}
+                    className="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 text-xs rounded-lg disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>
