@@ -4,7 +4,7 @@
 // 透過連結訪問，顯示活動資訊與 QR Code
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Calendar, MapPin, Clock, CheckCircle, AlertCircle, RefreshCw, QrCode, Copy, ExternalLink, Sparkles, Download } from 'lucide-react'
+import { Calendar, MapPin, Clock, CheckCircle, AlertCircle, RefreshCw, QrCode, Copy, ExternalLink, Sparkles, Download, Info } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { verifyParticipantToken, regenerateQRToken } from '../api/supabase'
 import { supabase } from '../lib/supabase'
@@ -19,6 +19,7 @@ export const ParticipantView = () => {
   const [countdown, setCountdown] = useState(60)
   const [currentToken, setCurrentToken] = useState(token) // 追蹤當前 Token (用於動態 QR Code)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [activeTab, setActiveTab] = useState('qr') // 'info' or 'qr'
   
   // PWA 安裝狀態
   const [deferredPrompt, setDeferredPrompt] = useState(null)
@@ -262,24 +263,24 @@ export const ParticipantView = () => {
   }
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50 pb-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50 pb-20">
       {/* 頂部裝飾 */}
       <div className="relative overflow-hidden">
         {/* 裝飾圓形 */}
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-b from-primary-400 to-transparent opacity-20 rounded-[100%]"></div>
         
         {/* 頂部 Header */}
-        <div className="relative pt-12 pb-16 px-6">
+        <div className="relative pt-8 pb-12 px-6">
           {/* 成功報到狀態 */}
           {data.is_checked_in && (
-            <div className="max-w-md mx-auto mb-6">
-              <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-green-200 flex items-center gap-4 animate-pulse">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="max-w-md mx-auto mb-4">
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-3 shadow-lg border border-green-200 flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-green-800">已完成報到</h3>
-                  <p className="text-sm text-green-600">歡迎參加本次活動！</p>
+                  <h3 className="font-bold text-green-800 text-sm">已完成報到</h3>
+                  <p className="text-xs text-green-600">歡迎參加本次活動！</p>
                 </div>
               </div>
             </div>
@@ -287,188 +288,208 @@ export const ParticipantView = () => {
           
           {/* 歡迎文字 */}
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
-              <Sparkles className="h-4 w-4 text-primary-600" />
-              <span className="text-sm font-medium text-primary-700">活動報到系統</span>
+            <div className="inline-flex items-center gap-2 bg-white/60 backdrop-blur-sm px-3 py-1.5 rounded-full mb-3">
+              <Sparkles className="h-3 w-3 text-primary-600" />
+              <span className="text-xs font-medium text-primary-700">活動報到系統</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h1 className="text-2xl font-bold text-gray-900 mb-3">
               您好，{data.participant_name}
             </h1>
-            <div className="inline-flex items-center px-6 py-3 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100">
-              <p className="text-gray-600 font-medium">請出示 QR Code 進行報到</p>
-            </div>
-            
-            {/* PWA 安裝按鈕 */}
-            {showInstallButton && (
-              <div className="mt-4">
-                <button
-                  onClick={handleInstallPWA}
-                  className="inline-flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-gray-200 text-sm font-medium text-gray-700 hover:bg-white transition-colors"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  加入主畫面
-                </button>
-              </div>
-            )}
+            <p className="text-sm text-gray-600">請出示 QR Code 進行報到</p>
           </div>
         </div>
       </div>
       
-      <div className="container mx-auto px-4 -mt-8">
-        {/* 活動資訊卡片 */}
-        <div className="max-w-md mx-auto bg-white rounded-3xl shadow-xl overflow-hidden mb-6">
-          <div className="p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-start gap-3">
-              <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Calendar className="h-5 w-5 text-primary-600" />
-              </div>
-              {data.event_name}
-            </h2>
-            
-            <div className="space-y-4">
-              {/* 日期 */}
-              {data.event_date && (
-                <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Calendar className="h-5 w-5 text-blue-600" />
+      <div className="container mx-auto px-4 -mt-6">
+        {/* 活動詳情 Tab */}
+        {activeTab === 'info' && (
+          <div className="max-w-md mx-auto">
+            {/* 活動資訊卡片 */}
+            <div className="bg-white rounded-3xl shadow-xl overflow-hidden mb-4">
+              <div className="p-5">
+                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-start gap-3">
+                  <div className="w-9 h-9 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Calendar className="h-5 w-5 text-primary-600" />
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">活動日期</p>
-                    <p className="text-gray-900 font-semibold">{formatDate(data.event_date)}</p>
-                  </div>
+                  {data.event_name}
+                </h2>
+                
+                <div className="space-y-3">
+                  {/* 日期 */}
+                  {data.event_date && (
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                      <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <Calendar className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">活動日期</p>
+                        <p className="text-gray-900 font-semibold text-sm">{formatDate(data.event_date)}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 時間 */}
+                  {data.event_time && (
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                      <div className="w-9 h-9 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <Clock className="h-4 w-4 text-orange-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">開始時間</p>
+                        <p className="text-gray-900 font-semibold text-sm">{data.event_time}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 地點 */}
+                  {data.event_location && (
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                      <div className="w-9 h-9 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <MapPin className="h-4 w-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">活動地點</p>
+                        <p className="text-gray-900 font-semibold text-sm">{data.event_location}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-              
-              {/* 時間 */}
-              {data.event_time && (
-                <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl">
-                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-orange-600" />
+                
+                {/* 詳情 */}
+                {data.event_description && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <h3 className="font-semibold text-gray-900 mb-2 text-sm">活動說明</h3>
+                    <p className="text-gray-600 whitespace-pre-wrap text-sm leading-relaxed">
+                      {data.event_description}
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">開始時間</p>
-                    <p className="text-gray-900 font-semibold">{data.event_time}</p>
-                  </div>
-                </div>
-              )}
-              
-              {/* 地點 */}
-              {data.event_location && (
-                <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <MapPin className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">活動地點</p>
-                    <p className="text-gray-900 font-semibold">{data.event_location}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* 詳情 */}
-            {data.event_description && (
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-3">活動說明</h3>
-                <p className="text-gray-600 whitespace-pre-wrap text-sm leading-relaxed">
-                  {data.event_description}
-                </p>
+                )}
               </div>
-            )}
-          </div>
-        </div>
-        
-        {/* QR Code 卡片 */}
-        <div className="max-w-md mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
-          <div className="p-6 text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <QrCode className="h-6 w-6 text-primary-600" />
-              <h3 className="text-lg font-bold text-gray-900">報到 QR Code</h3>
-            </div>
-            
-            <p className="text-sm text-gray-500 mb-6">
-              請出示此 QR Code 供管理員掃描
-            </p>
-            
-            {/* QR Code 顯示區 */}
-            <div className={`relative inline-block mb-6 ${isRefreshing ? 'animate-pulse' : ''}`}>
-              {/* 發光背景 */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary-400 to-primary-600 rounded-3xl blur-xl opacity-20 transform scale-110"></div>
-              
-              {/* QR Code 本體 */}
-              <div className="relative bg-white p-4 rounded-3xl border-2 border-gray-100 shadow-inner">
-                <QRCodeSVG
-                  value={`${window.location.origin}/participants/${currentToken}`}
-                  size={220}
-                  level={"H"}
-                  includeMargin={true}
-                  imageSettings={data.is_checked_in ? {
-                    src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 11.08V12a10 10 0 1 1-5.93-9.14'%3E%3C/path%3E%3Cpath d='m9 11 3 3L22 4'%3E%3C/path%3E%3C/svg%3E",
-                    height: 40,
-                    width: 40,
-                    excavate: true
-                  } : undefined}
-                />
-              </div>
-            </div>
-            
-            {/* 倒數計時器 */}
-            <div className="mb-6">
-              <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden mb-2">
-                <div 
-                  className="h-full bg-gradient-to-r from-primary-500 to-primary-600 transition-all duration-1000 ease-linear"
-                  style={{ width: `${(countdown / 60) * 100}%` }}
-                ></div>
-              </div>
-              <div className="flex items-center justify-center gap-2 text-sm">
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin text-primary-600' : 'text-gray-400'}`} />
-                <span className="text-gray-500">
-                  {isRefreshing ? '產生新碼中...' : `QR Code 將於 ${countdown} 秒後自動刷新`}
-                </span>
-              </div>
-            </div>
-            
-            {/* 提示 */}
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl mb-6">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-amber-800 text-left">
-                  為確保安全，QR Code 具有時效性。請在報到時展示最新的 QR Code 畫面
-                </p>
-              </div>
-            </div>
-            
-            {/* 操作按鈕 */}
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => {
-                  refreshToken(true)
-                  setCountdown(60)
-                }}
-                disabled={isRefreshing}
-                className="w-full inline-flex items-center justify-center px-6 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-2xl hover:from-primary-600 hover:to-primary-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <RefreshCw className={`h-5 w-5 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                {isRefreshing ? '產生中...' : '立即刷新 QR Code'}
-              </button>
-              
-              <button
-                onClick={copyLink}
-                className="w-full inline-flex items-center justify-center px-6 py-3 bg-gray-100 text-gray-700 font-medium rounded-2xl hover:bg-gray-200 transition-colors"
-              >
-                <Copy className="h-4 w-4 mr-2" />
-                複製報到連結
-              </button>
             </div>
           </div>
-        </div>
+        )}
         
-        {/* 底部資訊 */}
-        <div className="text-center mt-8">
-          <p className="text-xs text-gray-400">
-            活動報到系統 v2.0
-          </p>
+        {/* QR Code Tab */}
+        {activeTab === 'qr' && (
+          <div className="max-w-md mx-auto">
+            {/* QR Code 卡片 */}
+            <div className="bg-white rounded-3xl shadow-xl overflow-hidden mb-4">
+              <div className="p-5 text-center">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <QrCode className="h-5 w-5 text-primary-600" />
+                  <h3 className="text-base font-bold text-gray-900">報到 QR Code</h3>
+                </div>
+                
+                <p className="text-xs text-gray-500 mb-4">
+                  請出示此 QR Code 供管理員掃描
+                </p>
+                
+                {/* QR Code 顯示區 */}
+                <div className={`relative inline-block mb-4 ${isRefreshing ? 'animate-pulse' : ''}`}>
+                  {/* 發光背景 */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-400 to-primary-600 rounded-3xl blur-xl opacity-20 transform scale-110"></div>
+                  
+                  {/* QR Code 本體 */}
+                  <div className="relative bg-white p-3 rounded-2xl border-2 border-gray-100 shadow-inner">
+                    <QRCodeSVG
+                      value={`${window.location.origin}/participants/${currentToken}`}
+                      size={200}
+                      level={"H"}
+                      includeMargin={true}
+                      imageSettings={data.is_checked_in ? {
+                        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 11.08V12a10 10 0 1 1-5.93-9.14'%3E%3C/path%3E%3Cpath d='m9 11 3 3L22 4'%3E%3C/path%3E%3C/svg%3E",
+                        height: 36,
+                        width: 36,
+                        excavate: true
+                      } : undefined}
+                    />
+                  </div>
+                </div>
+                
+                {/* 倒數計時器 */}
+                <div className="mb-4">
+                  <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden mb-2">
+                    <div 
+                      className="h-full bg-gradient-to-r from-primary-500 to-primary-600 transition-all duration-1000 ease-linear"
+                      style={{ width: `${(countdown / 60) * 100}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex items-center justify-center gap-1.5 text-xs">
+                    <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin text-primary-600' : 'text-gray-400'}`} />
+                    <span className="text-gray-500">
+                      {isRefreshing ? '產生新碼中...' : `${countdown} 秒後自動刷新`}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* 提示 */}
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl mb-4">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-800 text-left">
+                      QR Code 具有時效性，請展示最新畫面
+                    </p>
+                  </div>
+                </div>
+                
+                {/* 操作按鈕 */}
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => {
+                      refreshToken(true)
+                      setCountdown(60)
+                    }}
+                    disabled={isRefreshing}
+                    className="w-full inline-flex items-center justify-center px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    {isRefreshing ? '產生中...' : '立即刷新'}
+                  </button>
+                  
+                  <button
+                    onClick={copyLink}
+                    className="w-full inline-flex items-center justify-center px-5 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors"
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    複製連結
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* 底部導航欄 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 safe-area-pb">
+        <div className="flex items-center justify-around py-2">
+          <button
+            onClick={() => setActiveTab('info')}
+            className={`flex flex-col items-center py-2 px-6 rounded-lg transition-colors ${
+              activeTab === 'info' ? 'text-primary-600 bg-primary-50' : 'text-gray-500'
+            }`}
+          >
+            <Info className="h-6 w-6" />
+            <span className="text-xs mt-1 font-medium">活動詳情</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('qr')}
+            className={`flex flex-col items-center py-2 px-6 rounded-lg transition-colors ${
+              activeTab === 'qr' ? 'text-primary-600 bg-primary-50' : 'text-gray-500'
+            }`}
+          >
+            <QrCode className="h-6 w-6" />
+            <span className="text-xs mt-1 font-medium">QR Code</span>
+          </button>
         </div>
+      </div>
+      
+      {/* 底部資訊 */}
+      <div className="text-center mt-6 pb-24">
+        <p className="text-xs text-gray-400">
+          活動報到系統 v2.0
+        </p>
       </div>
     </div>
   )
