@@ -264,39 +264,33 @@ export const ParticipantView = () => {
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50 pb-20">
-      {/* 頂部裝飾 */}
-      <div className="relative overflow-hidden">
-        {/* 裝飾圓形 */}
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-b from-primary-400 to-transparent opacity-20 rounded-[100%]"></div>
-        
-        {/* 頂部 Header */}
-        <div className="relative pt-8 pb-10 px-6">
-          {/* 成功報到狀態 */}
-          {data.is_checked_in && (
-            <div className="max-w-md mx-auto mb-4">
-              <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-3 shadow-lg border border-green-200 flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-green-800 text-sm">已完成報到</h3>
-                  <p className="text-xs text-green-600">歡迎參加本次活動！</p>
-                </div>
+      {/* 頂部 Header */}
+      <div className="pt-8 pb-10 px-6">
+        {/* 成功報到狀態 */}
+        {data.is_checked_in && (
+          <div className="max-w-md mx-auto mb-4">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-3 shadow-lg border border-green-200 flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-green-800 text-sm">已完成報到</h3>
+                <p className="text-xs text-green-600">歡迎參加本次活動！</p>
               </div>
             </div>
-          )}
-          
-          {/* 歡迎文字 */}
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              您好，{data.participant_name}
-            </h1>
-            <p className="text-sm text-gray-600">請出示 QR Code 進行報到</p>
           </div>
+        )}
+        
+        {/* 歡迎文字 */}
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            您好，{data.participant_name}
+          </h1>
+          <p className="text-sm text-gray-600">請出示 QR Code 進行報到</p>
         </div>
       </div>
       
-      <div className="container mx-auto px-4 -mt-6">
+      <div className="container mx-auto px-4 -mt-2">
         {/* 活動詳情 Tab */}
         {activeTab === 'info' && (
           <div className="max-w-md mx-auto">
