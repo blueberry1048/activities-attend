@@ -4,7 +4,7 @@
 // 透過連結訪問，顯示活動資訊與 QR Code
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Calendar, MapPin, Clock, CheckCircle, AlertCircle, RefreshCw, QrCode, Copy, ExternalLink, Sparkles, Download, Info } from 'lucide-react'
+import { Calendar, MapPin, Clock, CheckCircle, AlertCircle, RefreshCw, QrCode, Copy, ExternalLink, Download, Info } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { verifyParticipantToken, regenerateQRToken } from '../api/supabase'
 import { supabase } from '../lib/supabase'
@@ -270,7 +270,7 @@ export const ParticipantView = () => {
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-b from-primary-400 to-transparent opacity-20 rounded-[100%]"></div>
         
         {/* 頂部 Header */}
-        <div className="relative pt-8 pb-12 px-6">
+        <div className="relative pt-8 pb-10 px-6">
           {/* 成功報到狀態 */}
           {data.is_checked_in && (
             <div className="max-w-md mx-auto mb-4">
@@ -288,11 +288,7 @@ export const ParticipantView = () => {
           
           {/* 歡迎文字 */}
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 bg-white/60 backdrop-blur-sm px-3 py-1.5 rounded-full mb-3">
-              <Sparkles className="h-3 w-3 text-primary-600" />
-              <span className="text-xs font-medium text-primary-700">活動報到系統</span>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-3">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
               您好，{data.participant_name}
             </h1>
             <p className="text-sm text-gray-600">請出示 QR Code 進行報到</p>
