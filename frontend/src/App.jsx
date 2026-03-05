@@ -3,10 +3,8 @@
 // ============================================================
 // 包含路由設定與全域認證 Provider
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { AuthProvider } from './contexts/AuthContext'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { Login } from './pages/Login'
-import { EventList } from './pages/EventList'
-import { EventDetail } from './pages/EventDetail'
 import { AdminDashboard } from './pages/admin/AdminDashboard'
 import { EventForm } from './pages/admin/EventForm'
 import { Scanner } from './pages/admin/Scanner'
@@ -17,6 +15,30 @@ import { HelperScan } from './pages/helper/HelperScan'
 import { HelperParticipants } from './pages/helper/HelperParticipants'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Navbar } from './components/Navbar'
+
+// 根路由重導向元件
+const RootRedirect = () => {
+  const { user, isAdmin, isHelper, loading } = useAuth()
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="spinner"></div>
+      </div>
+    )
+  }
+  
+  if (isAdmin) {
+    return <Navigate to="/admin" replace />
+  }
+  
+  if (isHelper) {
+    return <Navigate to="/helper/events" replace />
+  }
+  
+  // 未登入或普通用戶，引導至登入
+  return <Navigate to="/login" replace />
+}
 
 // 輔助元件：決定是否顯示 Navbar
 const AppContent = () => {
@@ -37,17 +59,8 @@ const AppContent = () => {
             {/* 公開路由 */}
             <Route path="/login" element={<Login />} />
             
-            {/* 參加者路由 */}
-            <Route path="/" element={
-              <ProtectedRoute requireAdmin={false}>
-                <EventList />
-              </ProtectedRoute>
-            } />
-            <Route path="/event/:id" element={
-              <ProtectedRoute requireAdmin={false}>
-                <EventDetail />
-              </ProtectedRoute>
-            } />
+            {/* 根目錄重導向 - 根據用戶角色導向不同頁面 */}
+            <Route path="/" element={<RootRedirect />} />
             
             {/* 公開路由 - 參加者連結檢視 */}
             <Route path="/participants/:token" element={<ParticipantView />} />
